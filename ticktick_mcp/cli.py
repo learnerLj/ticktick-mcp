@@ -3,98 +3,113 @@
 Command-line interface for TickTick MCP server.
 """
 
-import argparse
 import logging
-import os
 import sys
 
-from dotenv import load_dotenv
+import click
 
 from .authenticate import main as auth_main
-from .src.server import main as server_main
+from .config import ConfigManager
+from .logging_config import LoggerManager
+from .server_oop import create_server
 
 
 def check_auth_setup() -> bool:
     """Check if authentication is set up properly."""
-    load_dotenv()
-    return os.getenv("TICKTICK_ACCESS_TOKEN") is not None
+    config_manager = ConfigManager()
+    return config_manager.is_authenticated()
 
 
-def main():
-    """Entry point for the CLI."""
-    parser = argparse.ArgumentParser(description="TickTick MCP Server")
-    subparsers = parser.add_subparsers(dest="command", help="Command to run")
+@click.group(invoke_without_command=True)
+@click.pass_context
+def cli(ctx: click.Context) -> None:
+    """TickTick MCP Server - Task management integration for Claude."""
+    if ctx.invoked_subcommand is None:
+        # Default to run command if no subcommand is provided
+        ctx.invoke(run)
 
-    # 'run' command for running the server
-    run_parser = subparsers.add_parser("run", help="Run the TickTick MCP server")
-    run_parser.add_argument("--debug", action="store_true", help="Enable debug logging")
-    run_parser.add_argument(
-        "--transport",
-        default="stdio",
-        choices=["stdio"],
-        help="Transport type (currently only stdio is supported)",
-    )
 
-    # 'auth' command for authentication
-    auth_parser = subparsers.add_parser("auth", help="Authenticate with TickTick")
-
-    args = parser.parse_args()
-
-    # If no command specified, default to 'run'
-    if not args.command:
-        args.command = "run"
-
-    # For the run command, check if auth is set up
-    if args.command == "run" and not check_auth_setup():
-        print(
-            """
-╔════════════════════════════════════════════════╗
-║      TickTick MCP Server - Authentication      ║
-╚════════════════════════════════════════════════╝
-
-Authentication setup required!
-You need to set up TickTick authentication before running the server.
-
-Would you like to set up authentication now? (y/n): """,
-            end="",
-        )
-        choice = input().lower().strip()
-        if choice == "y":
+@cli.command()
+@click.option(
+    "--debug", 
+    is_flag=True, 
+    help="Enable debug logging"
+)
+@click.option(
+    "--transport",
+    default="stdio",
+    type=click.Choice(["stdio"]),
+    help="Transport type (currently only stdio is supported)",
+)
+def run(debug: bool, transport: str) -> None:
+    """Run the TickTick MCP server."""
+    # Note: transport parameter is reserved for future use
+    _ = transport  # Currently only stdio is supported
+    
+    # Check if auth is set up
+    if not check_auth_setup():
+        click.echo()
+        click.echo("╔════════════════════════════════════════════════╗")
+        click.echo("║      TickTick MCP Server - Authentication      ║")
+        click.echo("╚════════════════════════════════════════════════╝")
+        click.echo()
+        click.echo("Authentication setup required!")
+        click.echo("You need to set up TickTick authentication before running the server.")
+        click.echo()
+        
+        if click.confirm("Would you like to set up authentication now?"):
             # Run the auth flow
             auth_result = auth_main()
             if auth_result != 0:
                 # Auth failed, exit
                 sys.exit(auth_result)
         else:
-            print(
-                """
-Authentication is required to use the TickTick MCP server.
-Run 'uv run -m ticktick_mcp.cli auth' to set up authentication later.
-            """
-            )
+            click.echo()
+            click.echo("Authentication is required to use the TickTick MCP server.")
+            click.echo("Run 'uv run -m ticktick_mcp.cli auth' to set up authentication later.")
             sys.exit(1)
 
-    # Run the appropriate command
-    if args.command == "auth":
-        # Run authentication flow
-        sys.exit(auth_main())
-    elif args.command == "run":
-        # Configure logging based on debug flag
-        log_level = logging.DEBUG if args.debug else logging.INFO
-        logging.basicConfig(
-            level=log_level,
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        )
+    # Configure logging based on debug flag
+    log_level = logging.DEBUG if debug else logging.INFO
+    logger_manager = LoggerManager()
+    logger_manager.setup_logging(level=log_level)
 
-        # Start the server
-        try:
-            server_main()
-        except KeyboardInterrupt:
-            print("Server stopped by user", file=sys.stderr)
-            sys.exit(0)
-        except Exception as e:
-            print(f"Error starting server: {e}", file=sys.stderr)
+    # Create and start the server
+    try:
+        server = create_server()
+        if not server.initialize():
+            click.echo("Failed to initialize TickTick MCP server", err=True)
             sys.exit(1)
+        server.run()
+    except KeyboardInterrupt:
+        click.echo("\nServer stopped by user", err=True)
+        sys.exit(0)
+    except Exception as e:
+        click.echo(f"Error starting server: {e}", err=True)
+        sys.exit(1)
+
+
+@cli.command()
+def auth() -> None:
+    """Authenticate with TickTick."""
+    sys.exit(auth_main())
+
+
+@cli.command()
+def status() -> None:
+    """Check authentication status."""
+    config_manager = ConfigManager()
+    if config_manager.is_authenticated():
+        click.echo("✓ Authentication configured")
+        click.echo("You can run the server with: uv run -m ticktick_mcp.cli run")
+    else:
+        click.echo("✗ Authentication not configured")
+        click.echo("Run authentication with: uv run -m ticktick_mcp.cli auth")
+
+
+def main() -> None:
+    """Entry point for the CLI."""
+    cli()
 
 
 if __name__ == "__main__":
