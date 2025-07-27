@@ -1,1 +1,1 @@
-# TickTick MCP Server
+"""TickTick MCP Server source modules."""
