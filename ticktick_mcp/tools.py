@@ -264,7 +264,12 @@ class GetAllTasksTool(BaseMCPTool):
     """Tool to get all tasks with filtering."""
 
     def __init__(self, task_service: TaskService):
-        super().__init__("get_all_tasks", "Get all tasks from TickTick across all projects with optional filters")
+        super().__init__(
+            "get_all_tasks", 
+            "Get all tasks from TickTick across all projects with optional filters. "
+            "Supports filtering by status, priority, project, and search query. "
+            "Can also get special collections like inbox tasks using project_id='inbox'."
+        )
         self.task_service = task_service
 
     async def execute(
@@ -282,7 +287,13 @@ class GetAllTasksTool(BaseMCPTool):
             limit: Maximum number of tasks to return (default 50)
             query: Search query string to match in task title/content
             priority: Filter by priority level (0: None, 1: Low, 3: Medium, 5: High)
-            project_id: Filter by specific project ID
+            project_id: Filter by specific project ID. Special values:
+                       - 'inbox': Get tasks not assigned to any project
+                       - Regular project ID: Get tasks from specific project
+                       
+        Note: For date-based filtering (today, overdue, next 7 days), the AI should:
+        1. Get all active tasks with this tool
+        2. Use client-side date filtering on the results based on due_date field
         """
         try:
             # Validate priority if provided
@@ -409,62 +420,88 @@ class CreateTaskTool(BaseMCPTool):
             return self._format_error(e)
 
 
-class CompleteTaskTool(BaseMCPTool):
-    """Tool to mark a task as complete."""
+class UpdateTaskTool(BaseMCPTool):
+    """Tool to update an existing task."""
 
     def __init__(self, task_service: TaskService):
-        super().__init__("complete_task", "Mark a task as complete")
+        super().__init__("update_task", "Update an existing task's properties")
         self.task_service = task_service
 
-    async def execute(self, project_id: str, task_id: str) -> str:
-        """Mark task as complete.
+    async def execute(
+        self,
+        task_id: str,
+        title: Optional[str] = None,
+        content: Optional[str] = None,
+        start_date: Optional[str] = None,
+        due_date: Optional[str] = None,
+        priority: Optional[int] = None,
+        project_id: Optional[str] = None,
+    ) -> str:
+        """Update an existing task.
         
         Args:
-            project_id: ID of the project
-            task_id: ID of the task
+            task_id: ID of the task to update
+            title: New task title (optional)
+            content: New task description/content (optional)
+            start_date: New start date in ISO format YYYY-MM-DDThh:mm:ss+0000 (optional)
+            due_date: New due date in ISO format YYYY-MM-DDThh:mm:ss+0000 (optional)
+            priority: New priority level (0: None, 1: Low, 3: Medium, 5: High) (optional)
+            project_id: New project ID to move task to (optional)
         """
         try:
-            self.task_service.complete_task(project_id, task_id)
-            return f"Task {task_id} marked as complete."
+            # First get the existing task
+            existing_task = self.task_service.get_task_by_id(task_id)
+            
+            # Validate inputs if provided
+            priority_enum = existing_task.priority
+            if priority is not None:
+                priority_enum = self._validate_priority(priority)
+            
+            if start_date:
+                self._validate_date_format(start_date, "start_date")
+            if due_date:
+                self._validate_date_format(due_date, "due_date")
+
+            # Create updated task with new values (keep existing if not provided)
+            updated_task = Task(
+                id=task_id,
+                title=title if title is not None else existing_task.title,
+                project_id=project_id if project_id is not None else existing_task.project_id,
+                content=content if content is not None else existing_task.content,
+                priority=priority_enum,
+                start_date=start_date if start_date is not None else existing_task.start_date,
+                due_date=due_date if due_date is not None else existing_task.due_date,
+                status=existing_task.status,  # Keep existing status
+                tags=existing_task.tags,      # Keep existing tags
+                subtasks=existing_task.subtasks,  # Keep existing subtasks
+            )
+
+            result_task = self.task_service.update_task(updated_task)
+            return f"Task updated successfully:\n\n{TaskFormatter.format_task(result_task)}"
         except Exception as e:
-            self.logger.error(f"Error completing task {task_id}: {e}")
+            self.logger.error(f"Error updating task {task_id}: {e}")
             return self._format_error(e)
 
 
-class DeleteTaskTool(BaseMCPTool):
-    """Tool to delete a task."""
-
-    def __init__(self, task_service: TaskService):
-        super().__init__("delete_task", "Delete a task")
-        self.task_service = task_service
-
-    async def execute(self, project_id: str, task_id: str) -> str:
-        """Delete a task.
-        
-        Args:
-            project_id: ID of the project
-            task_id: ID of the task
-        """
-        try:
-            self.task_service.delete_task(project_id, task_id)
-            return f"Task {task_id} deleted successfully."
-        except Exception as e:
-            self.logger.error(f"Error deleting task {task_id}: {e}")
-            return self._format_error(e)
 
 
 class BatchCompleteTasksTool(BaseMCPTool):
-    """Tool to complete multiple tasks."""
+    """Tool to complete one or multiple tasks."""
 
     def __init__(self, task_service: TaskService):
-        super().__init__("batch_complete_tasks", "Batch complete multiple tasks")
+        super().__init__(
+            "batch_complete_tasks", 
+            "Complete one or multiple tasks by providing comma-separated task IDs. "
+            "Can be used for single task (just provide one ID) or multiple tasks."
+        )
         self.task_service = task_service
 
     async def execute(self, task_ids: str) -> str:
-        """Complete multiple tasks.
+        """Complete one or multiple tasks.
         
         Args:
-            task_ids: Comma-separated list of task IDs to complete
+            task_ids: Single task ID or comma-separated list of task IDs to complete
+                     Examples: "task123" or "task123,task456,task789"
         """
         try:
             # Parse task IDs
@@ -473,24 +510,35 @@ class BatchCompleteTasksTool(BaseMCPTool):
                 return "No valid task IDs provided."
 
             self.task_service.batch_complete_tasks(ids)
-            return f"Successfully completed {len(ids)} tasks: {', '.join(ids)}"
+            
+            if len(ids) == 1:
+                return f"Task {ids[0]} marked as complete."
+            else:
+                return f"Successfully completed {len(ids)} tasks: {', '.join(ids)}"
         except Exception as e:
             self.logger.error(f"Error completing tasks: {e}")
             return self._format_error(e)
 
 
 class BatchDeleteTasksTool(BaseMCPTool):
-    """Tool to delete multiple tasks."""
+    """Tool to delete one or multiple tasks."""
 
     def __init__(self, task_service: TaskService):
-        super().__init__("batch_delete_tasks", "Batch delete multiple tasks")
+        super().__init__(
+            "batch_delete_tasks", 
+            "Delete one or multiple tasks by providing comma-separated task IDs. "
+            "Can be used for single task (just provide one ID) or multiple tasks. "
+            "Note: Only active (incomplete) tasks can be deleted. Completed tasks cannot be deleted."
+        )
         self.task_service = task_service
 
     async def execute(self, task_ids: str) -> str:
-        """Delete multiple tasks.
+        """Delete one or multiple tasks.
         
         Args:
-            task_ids: Comma-separated list of task IDs to delete
+            task_ids: Single task ID or comma-separated list of task IDs to delete
+                     Examples: "task123" or "task123,task456,task789"
+                     Note: Only active (incomplete) tasks can be deleted
         """
         try:
             # Parse task IDs
@@ -498,8 +546,16 @@ class BatchDeleteTasksTool(BaseMCPTool):
             if not ids:
                 return "No valid task IDs provided."
 
+            # Execute batch delete and capture results
             self.task_service.batch_delete_tasks(ids)
-            return f"Successfully deleted {len(ids)} tasks: {', '.join(ids)}"
+            
+            # Return informative message
+            if len(ids) == 1:
+                return f"Task deletion attempted for {ids[0]}. If the task was already completed, it cannot be deleted and was skipped. Check logs for details."
+            else:
+                return f"Batch deletion attempted for {len(ids)} tasks. Completed tasks cannot be deleted and were skipped. Check logs for detailed results."
         except Exception as e:
             self.logger.error(f"Error deleting tasks: {e}")
             return self._format_error(e)
+
+

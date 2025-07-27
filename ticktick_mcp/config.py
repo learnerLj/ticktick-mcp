@@ -19,8 +19,10 @@ class TickTickConfig:
     access_token: Optional[str] = None
     refresh_token: Optional[str] = None
     base_url: str = "https://api.ticktick.com/open/v1"
+    auth_url: str = "https://ticktick.com/oauth/authorize"
     token_url: str = "https://ticktick.com/oauth/token"
     redirect_uri: str = "http://localhost:8080/callback"
+    use_dida365: bool = False
 
     def __post_init__(self):
         """Validate configuration after initialization."""
@@ -28,6 +30,12 @@ class TickTickConfig:
             raise ConfigurationError("TICKTICK_CLIENT_ID is required")
         if not self.client_secret:
             raise ConfigurationError("TICKTICK_CLIENT_SECRET is required")
+        
+        # Auto-configure URLs for Dida365
+        if self.use_dida365:
+            self.base_url = "https://api.dida365.com/open/v1"
+            self.auth_url = "https://dida365.com/oauth/authorize"
+            self.token_url = "https://dida365.com/oauth/token"
 
 
 class ConfigManager:
@@ -61,6 +69,9 @@ class ConfigManager:
             # Load environment variables
             load_dotenv(self.env_file)
             
+            # Check if using Dida365
+            use_dida365 = os.getenv("USE_DIDA365", "").lower() in ("true", "1", "yes")
+            
             # Create configuration from environment
             self._config = TickTickConfig(
                 client_id=os.getenv("TICKTICK_CLIENT_ID", ""),
@@ -68,8 +79,10 @@ class ConfigManager:
                 access_token=os.getenv("TICKTICK_ACCESS_TOKEN"),
                 refresh_token=os.getenv("TICKTICK_REFRESH_TOKEN"),
                 base_url=os.getenv("TICKTICK_BASE_URL", "https://api.ticktick.com/open/v1"),
+                auth_url=os.getenv("TICKTICK_AUTH_URL", "https://ticktick.com/oauth/authorize"),
                 token_url=os.getenv("TICKTICK_TOKEN_URL", "https://ticktick.com/oauth/token"),
                 redirect_uri=os.getenv("TICKTICK_REDIRECT_URI", "http://localhost:8080/callback"),
+                use_dida365=use_dida365,
             )
         
         return self._config

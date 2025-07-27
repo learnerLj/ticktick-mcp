@@ -2,6 +2,7 @@
 
 import base64
 from typing import List, Optional, Dict, Any
+from datetime import datetime, timedelta
 import requests
 from abc import ABC, abstractmethod
 
@@ -246,56 +247,150 @@ class TaskService:
         self.logger = LoggerManager().get_logger("task_service")
 
     def get_all_tasks(self, task_filter: Optional[TaskFilter] = None) -> List[Task]:
-        """Get all tasks with optional filtering.
+        """Get all tasks across all projects.
+        
+        Since Dida365 API doesn't support global task retrieval directly,
+        this method iterates through all projects and collects their tasks.
         
         Args:
             task_filter: Optional filter criteria
             
         Returns:
-            List of tasks
+            List of tasks from all projects
         """
-        endpoint = "/task"
-        params = []
+        all_tasks = []
         
-        if task_filter:
-            if task_filter.status:
-                params.append(f"status={task_filter.status.value}")
-            if task_filter.limit:
-                params.append(f"limit={task_filter.limit}")
-            if task_filter.priority:
-                params.append(f"priority={task_filter.priority.value}")
-            if task_filter.project_id:
-                params.append(f"projectId={task_filter.project_id}")
-            if task_filter.query:
-                params.append(f"q={task_filter.query}")
-        else:
-            # Default parameters similar to original implementation
-            params.append("limit=50")
-        
-        if params:
-            endpoint += "?" + "&".join(params)
+        try:
+            # Get all projects first
+            projects = self.api_client.make_request("GET", "/project")
+            
+            # Add the special "inbox" project for tasks without a project
+            project_ids = [project.get('id') for project in projects if project.get('id')]
+            
+            # Try to add inbox with different possible IDs
+            possible_inbox_ids = ["inbox", "inbox1017224327"]
+            for inbox_id in possible_inbox_ids:
+                if inbox_id not in project_ids:  # Avoid duplicates
+                    project_ids.append(inbox_id)
+            
+            # Iterate through each project to get its tasks
+            for project_id in project_ids:
+                try:
+                    # Get tasks for this specific project
+                    project_tasks = self.get_project_tasks(project_id)
+                    
+                    # Apply filtering if specified
+                    if task_filter:
+                        filtered_tasks = []
+                        for task in project_tasks:
+                            # Apply status filter
+                            if task_filter.status and task.status != task_filter.status:
+                                continue
+                            # Apply priority filter
+                            if task_filter.priority and task.priority != task_filter.priority:
+                                continue
+                            # Apply project filter
+                            if task_filter.project_id and task.project_id != task_filter.project_id:
+                                continue
+                            # Apply query filter (search in title and content)
+                            if task_filter.query:
+                                query_lower = task_filter.query.lower()
+                                if (query_lower not in task.title.lower() and 
+                                    (not task.content or query_lower not in task.content.lower())):
+                                    continue
+                            filtered_tasks.append(task)
+                        all_tasks.extend(filtered_tasks)
+                    else:
+                        all_tasks.extend(project_tasks)
+                    
+                except Exception as e:
+                    # Log the error but continue with other projects
+                    # Don't treat individual project failures as total failure
+                    self.logger.debug(f"Skipping project {project_id}: {e}")
+                    continue
+            
+            # Apply limit if specified in filter
+            if task_filter and task_filter.limit:
+                all_tasks = all_tasks[:task_filter.limit]
+            
+            return all_tasks
+            
+        except Exception as e:
+            # Only fallback for critical errors, not individual project failures
+            if "projects" in str(e).lower() or "permission" in str(e).lower():
+                self.logger.warning(f"Project access failed: {e}. Trying direct API call...")
+                
+                endpoint = "/task"
+                params = []
+                
+                if task_filter:
+                    if task_filter.status:
+                        params.append(f"status={task_filter.status.value}")
+                    if task_filter.limit:
+                        params.append(f"limit={task_filter.limit}")
+                    if task_filter.priority:
+                        params.append(f"priority={task_filter.priority.value}")
+                    if task_filter.project_id:
+                        params.append(f"projectId={task_filter.project_id}")
+                    if task_filter.query:
+                        params.append(f"q={task_filter.query}")
+                else:
+                    # Default parameters similar to original implementation
+                    params.append("limit=50")
+                
+                if params:
+                    endpoint += "?" + "&".join(params)
 
-        response = self.api_client.make_request("GET", endpoint)
-        
-        # Handle both list and dict responses
-        if isinstance(response, list):
-            return [Task.from_dict(task_data) for task_data in response]
-        elif isinstance(response, dict) and "data" in response:
-            return [Task.from_dict(task_data) for task_data in response["data"]]
-        
-        return []
+                response = self.api_client.make_request("GET", endpoint)
+                
+                # Handle both list and dict responses
+                if isinstance(response, list):
+                    return [Task.from_dict(task_data) for task_data in response]
+                elif isinstance(response, dict) and "data" in response:
+                    return [Task.from_dict(task_data) for task_data in response["data"]]
+                
+                return []
+            else:
+                # Re-raise non-critical errors
+                raise e
 
     def get_task_by_id(self, task_id: str) -> Task:
         """Get task by ID.
+        
+        Since Dida365 doesn't support direct task access by ID,
+        this method searches through all tasks to find the matching one.
         
         Args:
             task_id: Task ID
             
         Returns:
             Task instance
+            
+        Raises:
+            Exception: If task not found
         """
-        response = self.api_client.make_request("GET", f"/task/{task_id}")
-        return Task.from_dict(response)
+        # Get all tasks and search for the matching ID
+        all_tasks = self.get_all_tasks()
+        
+        for task in all_tasks:
+            if task.id == task_id:
+                return task
+        
+        raise Exception(f"Task with ID {task_id} not found")
+
+    def get_project_tasks(self, project_id: str) -> List[Task]:
+        """Get all tasks in a project.
+        
+        Args:
+            project_id: Project ID
+            
+        Returns:
+            List of tasks in the project
+        """
+        response = self.api_client.make_request("GET", f"/project/{project_id}/data")
+        
+        tasks_data = response.get("tasks", [])
+        return [Task.from_dict(task_data) for task_data in tasks_data]
 
     def create_task(self, task: Task) -> Task:
         """Create a new task.
@@ -312,14 +407,39 @@ class TaskService:
     def update_task(self, task: Task) -> Task:
         """Update an existing task.
         
+        Note: Due to Dida365 API limitations, this method uses a workaround.
+        It deletes the old task and creates a new one with the same ID concept.
+        
         Args:
             task: Task to update
             
         Returns:
             Updated task
         """
-        response = self.api_client.make_request("POST", f"/task/{task.id}", task.to_dict())
-        return Task.from_dict(response)
+        try:
+            # Try the direct update approach first
+            response = self.api_client.make_request("POST", f"/task/{task.id}", task.to_dict())
+            return Task.from_dict(response)
+        except Exception as e:
+            self.logger.warning(f"Direct task update failed: {e}. Using fallback method.")
+            
+            # Fallback: Since direct update may not work, we'll recreate the task
+            # Note: This will change the task ID
+            try:
+                # First try to delete the old task if we can find its project
+                if task.project_id:
+                    try:
+                        self.delete_task(task.project_id, task.id)
+                    except:
+                        pass  # Ignore delete errors
+                
+                # Create new task with updated data
+                new_task = self.create_task(task)
+                self.logger.info(f"Task updated via recreation. New ID: {new_task.id}")
+                return new_task
+                
+            except Exception as fallback_error:
+                raise Exception(f"Both direct update and fallback failed: {str(e)}, {str(fallback_error)}")
 
     def delete_task(self, project_id: str, task_id: str) -> bool:
         """Delete a task.
@@ -350,18 +470,8 @@ class TaskService:
     def batch_complete_tasks(self, task_ids: List[str]) -> bool:
         """Complete multiple tasks.
         
-        Args:
-            task_ids: List of task IDs
-            
-        Returns:
-            True if successful
-        """
-        data = {"taskIds": task_ids, "status": TaskStatus.COMPLETED.value}
-        self.api_client.make_request("POST", "/task/batch/complete", data)
-        return True
-
-    def batch_delete_tasks(self, task_ids: List[str]) -> bool:
-        """Delete multiple tasks.
+        Since Dida365 doesn't support batch operations,
+        this method completes tasks one by one.
         
         Args:
             task_ids: List of task IDs
@@ -369,9 +479,172 @@ class TaskService:
         Returns:
             True if successful
         """
-        data = {"taskIds": task_ids}
-        self.api_client.make_request("POST", "/task/batch/delete", data)
+        success_count = 0
+        for task_id in task_ids:
+            try:
+                # Get task to find its project
+                task = self.get_task_by_id(task_id)
+                # Complete the task
+                self.complete_task(task.project_id, task_id)
+                success_count += 1
+            except Exception as e:
+                self.logger.warning(f"Failed to complete task {task_id}: {e}")
+        
+        if success_count == 0:
+            raise Exception("Failed to complete any tasks")
+        elif success_count < len(task_ids):
+            self.logger.warning(f"Only completed {success_count}/{len(task_ids)} tasks")
+        
         return True
+
+    def batch_delete_tasks(self, task_ids: List[str]) -> bool:
+        """Delete multiple tasks.
+        
+        Since Dida365 doesn't support batch operations,
+        this method deletes tasks one by one.
+        Note: Completed tasks cannot be deleted and will be skipped.
+        
+        Args:
+            task_ids: List of task IDs
+            
+        Returns:
+            True if successful
+        """
+        success_count = 0
+        failed_tasks = []
+        completed_tasks = []
+        not_found_tasks = []
+        
+        for task_id in task_ids:
+            try:
+                # Get task to find its project and check status
+                task = self.get_task_by_id(task_id)
+                
+                # Check if task is completed
+                if task.status == TaskStatus.COMPLETED:
+                    completed_tasks.append(task_id)
+                    self.logger.info(f"Skipping completed task {task_id} - completed tasks cannot be deleted")
+                    continue
+                
+                # Delete the task
+                self.delete_task(task.project_id, task_id)
+                success_count += 1
+                
+            except Exception as e:
+                if "not found" in str(e).lower():
+                    not_found_tasks.append(task_id)
+                    self.logger.info(f"Task {task_id} not found - likely already deleted or completed")
+                else:
+                    failed_tasks.append(task_id)
+                    self.logger.warning(f"Failed to delete task {task_id}: {e}")
+        
+        # Provide detailed results
+        results = []
+        if success_count > 0:
+            results.append(f"Successfully deleted {success_count} tasks")
+        if completed_tasks:
+            results.append(f"Skipped {len(completed_tasks)} completed tasks (cannot delete)")
+        if not_found_tasks:
+            results.append(f"Skipped {len(not_found_tasks)} tasks that were not found (likely completed/deleted)")
+        if failed_tasks:
+            results.append(f"Failed to delete {len(failed_tasks)} tasks")
+        
+        # Consider the operation successful if we had some success or valid skips
+        if success_count == 0 and not completed_tasks and not not_found_tasks:
+            raise Exception("Failed to delete any tasks")
+        
+        return True
+
+    def get_overdue_tasks(self) -> List[Task]:
+        """Get all overdue tasks.
+        
+        Returns:
+            List of overdue tasks
+        """
+        all_tasks = self.get_all_tasks()
+        today = datetime.now().date()
+        
+        overdue_tasks = []
+        for task in all_tasks:
+            if task.due_date and task.status != TaskStatus.COMPLETED:
+                # Parse task due date
+                if isinstance(task.due_date, str):
+                    try:
+                        # Handle ISO format: 2024-01-15T00:00:00+0000
+                        task_date = datetime.fromisoformat(task.due_date.replace('Z', '+00:00')).date()
+                        if task_date < today:
+                            overdue_tasks.append(task)
+                    except ValueError:
+                        # If parsing fails, skip this task
+                        self.logger.warning(f"Failed to parse due date for task {task.id}: {task.due_date}")
+                        continue
+                elif hasattr(task.due_date, 'date'):
+                    # If it's already a datetime object
+                    if task.due_date.date() < today:
+                        overdue_tasks.append(task)
+        
+        return overdue_tasks
+
+    def get_today_tasks(self) -> List[Task]:
+        """Get all tasks due today.
+        
+        Returns:
+            List of tasks due today
+        """
+        all_tasks = self.get_all_tasks()
+        today = datetime.now().date()
+        
+        today_tasks = []
+        for task in all_tasks:
+            if task.due_date and task.status != TaskStatus.COMPLETED:
+                # Parse task due date
+                if isinstance(task.due_date, str):
+                    try:
+                        # Handle ISO format: 2024-01-15T00:00:00+0000
+                        task_date = datetime.fromisoformat(task.due_date.replace('Z', '+00:00')).date()
+                        if task_date == today:
+                            today_tasks.append(task)
+                    except ValueError:
+                        # If parsing fails, skip this task
+                        self.logger.warning(f"Failed to parse due date for task {task.id}: {task.due_date}")
+                        continue
+                elif hasattr(task.due_date, 'date'):
+                    # If it's already a datetime object
+                    if task.due_date.date() == today:
+                        today_tasks.append(task)
+        
+        return today_tasks
+
+    def get_next_7_days_tasks(self) -> List[Task]:
+        """Get all tasks due in the next 7 days (including today).
+        
+        Returns:
+            List of tasks due in next 7 days
+        """
+        all_tasks = self.get_all_tasks()
+        today = datetime.now().date()
+        next_week = today + timedelta(days=7)
+        
+        next_7_days_tasks = []
+        for task in all_tasks:
+            if task.due_date and task.status != TaskStatus.COMPLETED:
+                # Parse task due date
+                if isinstance(task.due_date, str):
+                    try:
+                        # Handle ISO format: 2024-01-15T00:00:00+0000
+                        task_date = datetime.fromisoformat(task.due_date.replace('Z', '+00:00')).date()
+                        if today <= task_date <= next_week:
+                            next_7_days_tasks.append(task)
+                    except ValueError:
+                        # If parsing fails, skip this task
+                        self.logger.warning(f"Failed to parse due date for task {task.id}: {task.due_date}")
+                        continue
+                elif hasattr(task.due_date, 'date'):
+                    # If it's already a datetime object
+                    if today <= task.due_date.date() <= next_week:
+                        next_7_days_tasks.append(task)
+        
+        return next_7_days_tasks
 
 
 class ProjectService:

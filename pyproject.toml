@@ -32,6 +32,7 @@ dependencies = [
     "python-dotenv>=1.0.0,<2.0.0", 
     "requests>=2.30.0,<3.0.0",
     "click>=8.0.0,<9.0.0",
+    "rich>=13.0.0,<14.0.0",
 ]
 
 [project.urls]
@@ -45,6 +46,8 @@ ticktick-mcp = "ticktick_mcp.cli:main"
 [tool.uv]
 dev-dependencies = [
     "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
     "black>=23.0.0",
     "ruff>=0.1.0",
     "mypy>=1.0.0",
@@ -116,4 +119,18 @@ testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-v --tb=short"
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=ticktick_mcp",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "requires_auth: marks tests that require authentication",
+]
+asyncio_mode = "auto"

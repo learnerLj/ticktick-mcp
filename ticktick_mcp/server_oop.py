@@ -17,8 +17,7 @@ from .tools import (
     GetAllTasksTool,
     GetTaskByIdTool,
     CreateTaskTool,
-    CompleteTaskTool,
-    DeleteTaskTool,
+    UpdateTaskTool,
     BatchCompleteTasksTool,
     BatchDeleteTasksTool,
 )
@@ -147,8 +146,7 @@ class TickTickMCPServer:
             ("get_all_tasks", GetAllTasksTool(self.task_service)),
             ("get_task_by_id", GetTaskByIdTool(self.task_service)),
             ("create_task", CreateTaskTool(self.task_service)),
-            ("complete_task", CompleteTaskTool(self.task_service)),
-            ("delete_task", DeleteTaskTool(self.task_service)),
+            ("update_task", UpdateTaskTool(self.task_service)),
             ("batch_complete_tasks", BatchCompleteTasksTool(self.task_service)),
             ("batch_delete_tasks", BatchDeleteTasksTool(self.task_service)),
         ]

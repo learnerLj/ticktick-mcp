@@ -54,7 +54,7 @@ class OAuthCallbackHandler(http.server.BaseHTTPRequestHandler):
             response = """
             <html>
             <head>
-                <title>TickTick MCP Server - Authentication Successful</title>
+                <title>TickTick / Dida365 MCP Server - Authentication Successful</title>
                 <style>
                     body {
                         font-family: Arial, sans-serif;
@@ -79,7 +79,7 @@ class OAuthCallbackHandler(http.server.BaseHTTPRequestHandler):
             <body>
                 <h1>Authentication Successful!</h1>
                 <div class="box">
-                    <p>You have successfully authenticated with TickTick.</p>
+                    <p>You have successfully authenticated with your task management service.</p>
                     <p>You can now close this window and return to the terminal.</p>
                 </div>
             </body>
@@ -95,7 +95,7 @@ class OAuthCallbackHandler(http.server.BaseHTTPRequestHandler):
             response = """
             <html>
             <head>
-                <title>TickTick MCP Server - Authentication Failed</title>
+                <title>TickTick / Dida365 MCP Server - Authentication Failed</title>
                 <style>
                     body {
                         font-family: Arial, sans-serif;
@@ -120,7 +120,7 @@ class OAuthCallbackHandler(http.server.BaseHTTPRequestHandler):
             <body>
                 <h1>Authentication Failed</h1>
                 <div class="box">
-                    <p>Failed to receive authorization code from TickTick.</p>
+                    <p>Failed to receive authorization code from the service.</p>
                     <p>Please try again or check the error message in the terminal.</p>
                 </div>
             </body>
@@ -171,8 +171,19 @@ class TickTickAuth:
                 self.client_id = None
                 self.client_secret = None
 
-        self.auth_url = "https://ticktick.com/oauth/authorize"
-        self.token_url = "https://ticktick.com/oauth/token"
+        # Get URLs from config (will auto-detect Dida365)
+        try:
+            config = self.config_manager.load_config()
+            self.auth_url = config.auth_url
+            self.token_url = config.token_url
+            self.use_dida365 = config.use_dida365
+            self.service_name = "Dida365 (滴答清单)" if config.use_dida365 else "TickTick"
+        except Exception:
+            # Fallback to TickTick URLs
+            self.auth_url = "https://ticktick.com/oauth/authorize"
+            self.token_url = "https://ticktick.com/oauth/token"
+            self.use_dida365 = False
+            self.service_name = "TickTick"
         self.redirect_uri = redirect_uri
         self.port = port
         self.auth_code = None
@@ -232,7 +243,7 @@ class TickTickAuth:
         # Get the authorization URL
         auth_url = self.get_authorization_url(scopes, state)
 
-        print("Opening browser for TickTick authorization...")
+        print(f"Opening browser for {self.service_name} authorization...")
         print("If the browser doesn't open automatically, please visit this URL:")
         print(auth_url)
 

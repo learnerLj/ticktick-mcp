@@ -2,6 +2,8 @@
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for TickTick that enables interacting with your TickTick task management system directly through Claude and other MCP clients.
 
+**✨ Supports both TickTick (International) and Dida365 滴答清单 (China) with automatic configuration!**
+
 ## Features
 
 - 📋 View all your TickTick projects and tasks
@@ -55,6 +57,40 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for Ti
 
 ### Option 2: Development Installation
 
+For development, you have two approaches:
+
+#### Approach A: Editable Global Install (Recommended for Development)
+
+1. **Clone this repository**:
+   ```bash
+   git clone https://github.com/jacepark12/ticktick-mcp.git
+   cd ticktick-mcp
+   ```
+
+2. **Install in editable mode as a global tool**:
+   ```bash
+   # Install uv if you don't have it already
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+
+   # Install dependencies and the package in editable mode
+   uv sync
+   uv tool install --editable .
+   ```
+
+   Now you can use `ticktick-mcp` commands globally, and any code changes will be reflected immediately without reinstalling.
+
+3. **Authenticate with TickTick**:
+   ```bash
+   ticktick-mcp auth
+   ```
+
+4. **Test your configuration**:
+   ```bash
+   uv run test_server.py
+   ```
+
+#### Approach B: Local Development with uv run
+
 1. **Clone this repository**:
    ```bash
    git clone https://github.com/jacepark12/ticktick-mcp.git
@@ -70,16 +106,33 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for Ti
    uv sync
    ```
 
-3. **Authenticate with TickTick**:
+3. **Use uv run for all commands**:
    ```bash
-   # Run the authentication flow
+   # Authenticate with TickTick
    uv run ticktick-mcp auth
-   ```
 
-4. **Test your configuration**:
-   ```bash
+   # Check status
+   uv run ticktick-mcp status
+
+   # Run the server
+   uv run ticktick-mcp run
+
+   # Test configuration
    uv run test_server.py
    ```
+
+#### Which Development Approach to Choose?
+
+| Feature | Approach A (Editable Install) | Approach B (uv run) |
+|---------|-------------------------------|----------------------|
+| **Command Usage** | `ticktick-mcp auth` | `uv run ticktick-mcp auth` |
+| **Global Access** | ✅ Available anywhere | ❌ Only in project directory |
+| **Code Changes** | ✅ Instant reflection | ✅ Instant reflection |
+| **Claude Desktop Config** | Simple: `"command": "ticktick-mcp"` | Complex: needs full uv path |
+| **Isolation** | Less isolated (global tool) | ✅ Fully isolated to project |
+| **Convenience** | ✅ Very convenient | Moderate (longer commands) |
+
+**Recommendation**: Use **Approach A (Editable Install)** for active development as it provides the best developer experience while maintaining the ability to test code changes instantly.
 
 ## Authentication with TickTick
 
@@ -102,22 +155,22 @@ This server uses OAuth2 to authenticate with TickTick. The setup process is stra
 
 The server handles token refresh automatically, so you won't need to reauthenticate unless you revoke access or delete your configuration.
 
-## Authentication with Dida365
+## Authentication with Dida365 (滴答清单)
 
-[滴答清单 - Dida365](https://dida365.com/home) is China version of TickTick, and the authentication process is similar to TickTick. Follow these steps to set up Dida365 authentication:
+[滴答清单 - Dida365](https://dida365.com/home) is the China version of TickTick. The setup is just as simple:
 
-1. Register your application at the [Dida365 Developer Center](https://developer.dida365.com/manage)
+1. **Register your application** at the [Dida365 Developer Center](https://developer.dida365.com/manage)
    - Set the redirect URI to `http://localhost:8000/callback`
    - Note your Client ID and Client Secret
 
-2. Add environment variables to your configuration file at `~/.config/ticktick-mcp/.env`:
-   ```env
-   TICKTICK_BASE_URL='https://api.dida365.com/open/v1'
-   TICKTICK_AUTH_URL='https://dida365.com/oauth/authorize'
-   TICKTICK_TOKEN_URL='https://dida365.com/oauth/token'
+2. **Run the authentication command**:
+   ```bash
+   ticktick-mcp auth
    ```
+   
+   When prompted, select option `2` for Dida365. The system will automatically configure all the necessary API endpoints for you.
 
-3. Follow the same authentication steps as for TickTick
+**That's it!** No manual environment variable setup needed. The authentication tool will automatically detect you're using Dida365 and configure everything appropriately.
 
 ## Usage with Claude for Desktop
 
