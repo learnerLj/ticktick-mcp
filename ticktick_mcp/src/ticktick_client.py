@@ -25,7 +25,7 @@ class TickTickClient:
         if not self.access_token:
             raise ValueError(
                 "TICKTICK_ACCESS_TOKEN environment variable is not set. "
-                "Please run 'uv run -m ticktick_mcp.authenticate' to set up your credentials."
+                "Please run 'ticktick-mcp auth' to set up your credentials."
             )
 
         self.base_url = (

@@ -7,13 +7,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Development and Testing
 - Install dependencies: `uv sync`
 - Test server configuration: `uv run test_server.py`
-- Set up authentication: `uv run -m ticktick_mcp.cli auth`
-- Run MCP server: `uv run -m ticktick_mcp.cli run`
-- Run with debug logging: `uv run -m ticktick_mcp.cli run --debug`
+- Set up authentication: `uv run ticktick-mcp auth`
+- Run MCP server: `uv run ticktick-mcp run`
+- Run with debug logging: `uv run ticktick-mcp run --debug`
 - Format code: `uv run black .`
 - Lint code: `uv run ruff check .`
 - Type check: `uv run mypy ticktick_mcp/`
 - Run tests: `uv run pytest`
+
+### Global Installation Commands
+- Install globally: `uv tool install ticktick-mcp`
+- Set up authentication: `ticktick-mcp auth`
+- Check status: `ticktick-mcp status`
+- Run MCP server: `ticktick-mcp run`
+- Run with debug logging: `ticktick-mcp run --debug`
 
 ### Authentication
 The project requires TickTick OAuth2 authentication before use. If credentials are missing, the server will prompt for authentication setup.

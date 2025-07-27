@@ -99,7 +99,7 @@ class TickTickMCPServer:
             # Check authentication
             if not self.config_manager.is_authenticated():
                 self.logger.error(
-                    "No access token found. Please run 'uv run -m ticktick_mcp.cli auth' to authenticate."
+                    "No access token found. Please run 'ticktick-mcp auth' to authenticate."
                 )
                 return False
 
@@ -123,7 +123,7 @@ class TickTickMCPServer:
             return False
         except AuthenticationError as e:
             self.logger.error(f"Authentication error: {e.message}")
-            self.logger.error("Your access token may have expired. Please run 'uv run -m ticktick_mcp.cli auth' to refresh it.")
+            self.logger.error("Your access token may have expired. Please run 'ticktick-mcp auth' to refresh it.")
             return False
         except Exception as e:
             self.logger.error(f"Failed to initialize server: {e}")

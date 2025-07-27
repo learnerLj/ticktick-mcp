@@ -8,8 +8,8 @@ and obtaining the necessary access tokens for the TickTick MCP server.
 
 import logging
 import sys
-from pathlib import Path
 
+from .config import ConfigManager
 from .src.auth import TickTickAuth
 
 
@@ -37,40 +37,46 @@ Before you begin, you will need:
     """
     )
 
-    # Check if .env file exists and already has credentials
-    env_path = Path(".env")
+    # Check if configuration exists and already has credentials
+    config_manager = ConfigManager()
     has_credentials = False
 
-    if env_path.exists():
-        with open(env_path) as f:
-            content = f.read()
-            if "TICKTICK_CLIENT_ID" in content and "TICKTICK_CLIENT_SECRET" in content:
-                has_credentials = True
+    try:
+        config = config_manager.load_config()
+        if config.client_id and config.client_secret:
+            has_credentials = True
+    except Exception:
+        # Configuration doesn't exist or is invalid
+        pass
 
     client_id: str | None = None
     client_secret: str | None = None
 
     if has_credentials:
-        print("Existing TickTick credentials found in .env file.")
+        print("Existing TickTick credentials found in configuration.")
         use_existing = (
             input("Do you want to use these credentials? (y/n): ").lower().strip()
         )
 
         if use_existing == "y":
             # Proceed with existing credentials (will be loaded by TickTickAuth)
-            print("Using existing credentials from .env file.")
+            print("Using existing credentials from configuration.")
         else:
             # Ask for new credentials
             client_id = get_user_input("Enter your TickTick Client ID: ")
             client_secret = get_user_input("Enter your TickTick Client Secret: ")
     else:
         # No existing credentials, ask for new ones
-        print("No existing TickTick credentials found in .env file.")
+        print("No existing TickTick credentials found in configuration.")
         client_id = get_user_input("Enter your TickTick Client ID: ")
         client_secret = get_user_input("Enter your TickTick Client Secret: ")
 
-    # Initialize the auth manager
-    auth = TickTickAuth(client_id=client_id, client_secret=client_secret)
+    # Initialize the auth manager with the config manager
+    auth = TickTickAuth(
+        client_id=client_id, 
+        client_secret=client_secret,
+        config_manager=config_manager
+    )
 
     print("\nStarting the OAuth authentication flow...")
     print("A browser window will open for you to authorize the application.")

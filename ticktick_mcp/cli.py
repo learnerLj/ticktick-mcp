@@ -66,7 +66,7 @@ def run(debug: bool, transport: str) -> None:
         else:
             click.echo()
             click.echo("Authentication is required to use the TickTick MCP server.")
-            click.echo("Run 'uv run -m ticktick_mcp.cli auth' to set up authentication later.")
+            click.echo("Run 'ticktick-mcp auth' to set up authentication later.")
             sys.exit(1)
 
     # Configure logging based on debug flag
@@ -101,10 +101,10 @@ def status() -> None:
     config_manager = ConfigManager()
     if config_manager.is_authenticated():
         click.echo("✓ Authentication configured")
-        click.echo("You can run the server with: uv run -m ticktick_mcp.cli run")
+        click.echo("You can run the server with: ticktick-mcp run")
     else:
         click.echo("✗ Authentication not configured")
-        click.echo("Run authentication with: uv run -m ticktick_mcp.cli auth")
+        click.echo("Run authentication with: ticktick-mcp auth")
 
 
 def main() -> None:

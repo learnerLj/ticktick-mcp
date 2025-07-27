@@ -167,7 +167,7 @@ def run_authentication_flow():
             print("❌ Authentication failed!")
             return False
     else:
-        print("Please run 'uv run -m ticktick_mcp.cli auth' to authenticate.")
+        print("Please run 'ticktick-mcp auth' to authenticate.")
         return False
 
 
@@ -211,7 +211,7 @@ def main():
     print("\n" + "="*60)
     print("🎉 ALL TESTS PASSED!")
     print("✅ The TickTick MCP server OOP architecture is working correctly!")
-    print("🚀 You can now run the server using 'uv run -m ticktick_mcp.cli run'")
+    print("🚀 You can now run the server using 'ticktick-mcp run'")
     print("="*60)
 
 

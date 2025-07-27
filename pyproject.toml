@@ -41,7 +41,6 @@ Issues = "https://github.com/parkjs814/ticktick-mcp/issues"
 
 [project.scripts]
 ticktick-mcp = "ticktick_mcp.cli:main"
-ticktick-auth = "ticktick_mcp.authenticate:main"
 
 [tool.uv]
 dev-dependencies = [

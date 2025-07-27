@@ -27,7 +27,7 @@ def initialize_client():
         # Check if we have valid credentials
         if os.getenv("TICKTICK_ACCESS_TOKEN") is None:
             logger.error(
-                "No access token found in .env file. Please run 'uv run -m ticktick_mcp.cli auth' to authenticate."
+                "No access token found in .env file. Please run 'ticktick-mcp auth' to authenticate."
             )
             return False
 
@@ -40,7 +40,7 @@ def initialize_client():
         if "error" in projects:
             logger.error(f"Failed to access TickTick API: {projects['error']}")
             logger.error(
-                "Your access token may have expired. Please run 'uv run -m ticktick_mcp.cli auth' to refresh it."
+                "Your access token may have expired. Please run 'ticktick-mcp auth' to refresh it."
             )
             return False
 

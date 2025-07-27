@@ -21,46 +21,65 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for Ti
 
 ## Installation
 
+### Option 1: Install from Package (Recommended)
+
+1. **Install via uv (recommended)**:
+   ```bash
+   # Install uv if you don't have it already
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   
+   # Install as a global tool
+   uv tool install ticktick-mcp
+   ```
+
+2. **Or install via pip**:
+   ```bash
+   pip install ticktick-mcp
+   ```
+
+3. **Authenticate with TickTick**:
+   ```bash
+   # Run the authentication flow
+   ticktick-mcp auth
+   ```
+
+   This will:
+   - Ask for your TickTick Client ID and Client Secret
+   - Open a browser window for you to log in to TickTick
+   - Automatically save your access tokens to `~/.config/ticktick-mcp/.env`
+
+4. **Check status**:
+   ```bash
+   ticktick-mcp status
+   ```
+
+### Option 2: Development Installation
+
 1. **Clone this repository**:
    ```bash
    git clone https://github.com/jacepark12/ticktick-mcp.git
    cd ticktick-mcp
    ```
 
-2. **Install with uv**:
+2. **Install dependencies**:
    ```bash
    # Install uv if you don't have it already
    curl -LsSf https://astral.sh/uv/install.sh | sh
 
-   # Create a virtual environment
-   uv venv
-
-   # Activate the virtual environment
-   # On macOS/Linux:
-   source .venv/bin/activate
-   # On Windows:
-   .venv\Scripts\activate
-
-   # Install the package
-   uv pip install -e .
+   # Install dependencies
+   uv sync
    ```
 
 3. **Authenticate with TickTick**:
    ```bash
    # Run the authentication flow
-   uv run -m ticktick_mcp.cli auth
+   uv run ticktick-mcp auth
    ```
-
-   This will:
-   - Ask for your TickTick Client ID and Client Secret
-   - Open a browser window for you to log in to TickTick
-   - Automatically save your access tokens to a `.env` file
 
 4. **Test your configuration**:
    ```bash
    uv run test_server.py
    ```
-   This will verify that your TickTick credentials are working correctly.
 
 ## Authentication with TickTick
 
@@ -72,16 +91,16 @@ This server uses OAuth2 to authenticate with TickTick. The setup process is stra
 
 2. Run the authentication command:
    ```bash
-   uv run -m ticktick_mcp.cli auth
+   ticktick-mcp auth
    ```
 
 3. Follow the prompts to enter your Client ID and Client Secret
 
 4. A browser window will open for you to authorize the application with your TickTick account
 
-5. After authorizing, you'll be redirected back to the application, and your access tokens will be automatically saved to the `.env` file
+5. After authorizing, you'll be redirected back to the application, and your access tokens will be automatically saved to `~/.config/ticktick-mcp/.env`
 
-The server handles token refresh automatically, so you won't need to reauthenticate unless you revoke access or delete your `.env` file.
+The server handles token refresh automatically, so you won't need to reauthenticate unless you revoke access or delete your configuration.
 
 ## Authentication with Dida365
 
@@ -91,7 +110,7 @@ The server handles token refresh automatically, so you won't need to reauthentic
    - Set the redirect URI to `http://localhost:8000/callback`
    - Note your Client ID and Client Secret
 
-2. Add environment variables to your `.env` file:
+2. Add environment variables to your configuration file at `~/.config/ticktick-mcp/.env`:
    ```env
    TICKTICK_BASE_URL='https://api.dida365.com/open/v1'
    TICKTICK_AUTH_URL='https://dida365.com/oauth/authorize'
@@ -115,13 +134,27 @@ The server handles token refresh automatically, so you won't need to reauthentic
    notepad %APPDATA%\Claude\claude_desktop_config.json
    ```
 
-3. Add the TickTick MCP server configuration, using absolute paths:
+3. Add the TickTick MCP server configuration:
+
+   **If installed globally:**
    ```json
    {
       "mcpServers": {
          "ticktick": {
-            "command": "<absolute path to uv>",
-            "args": ["run", "--directory", "<absolute path to ticktick-mcp directory>", "-m", "ticktick_mcp.cli", "run"]
+            "command": "ticktick-mcp",
+            "args": ["run"]
+         }
+      }
+   }
+   ```
+
+   **If using development setup:**
+   ```json
+   {
+      "mcpServers": {
+         "ticktick": {
+            "command": "uv",
+            "args": ["run", "--directory", "/absolute/path/to/ticktick-mcp", "ticktick-mcp", "run"]
          }
       }
    }

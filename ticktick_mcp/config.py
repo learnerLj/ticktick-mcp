@@ -37,9 +37,15 @@ class ConfigManager:
         """Initialize configuration manager.
         
         Args:
-            env_file: Path to .env file. If None, uses default .env
+            env_file: Path to .env file. If None, uses default in user's home directory
         """
-        self.env_file = Path(env_file) if env_file else Path(".env")
+        if env_file:
+            self.env_file = Path(env_file)
+        else:
+            # Use user's home directory for config
+            config_dir = Path.home() / ".config" / "ticktick-mcp"
+            config_dir.mkdir(parents=True, exist_ok=True)
+            self.env_file = config_dir / ".env"
         self._config: Optional[TickTickConfig] = None
 
     def load_config(self) -> TickTickConfig:

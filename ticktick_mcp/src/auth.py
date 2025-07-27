@@ -15,9 +15,12 @@ import time
 import urllib.parse
 import webbrowser
 from pathlib import Path
+from typing import Optional
 
 import requests
 from dotenv import load_dotenv
+
+from ..config import ConfigManager
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -135,11 +138,11 @@ class TickTickAuth:
 
     def __init__(
         self,
-        client_id: str = None,
-        client_secret: str = None,
+        client_id: Optional[str] = None,
+        client_secret: Optional[str] = None,
         redirect_uri: str = "http://localhost:8000/callback",
         port: int = 8000,
-        env_file: str = None,
+        config_manager: Optional[ConfigManager] = None,
     ):
         """
         Initialize the TickTick authentication manager.
@@ -149,22 +152,27 @@ class TickTickAuth:
             client_secret: The TickTick client secret
             redirect_uri: The redirect URI for OAuth callbacks
             port: The port to use for the callback server
-            env_file: Path to .env file with credentials
+            config_manager: ConfigManager instance for loading/saving config
         """
-        # Try to load from environment variables or .env file
-        if env_file:
-            load_dotenv(env_file)
+        self.config_manager = config_manager or ConfigManager()
+        
+        # Try to load from config if credentials not provided
+        if client_id and client_secret:
+            self.client_id = client_id
+            self.client_secret = client_secret
+            # Save credentials to config
+            self._save_credentials(client_id, client_secret)
         else:
-            load_dotenv()
+            try:
+                config = self.config_manager.load_config()
+                self.client_id = config.client_id
+                self.client_secret = config.client_secret
+            except Exception:
+                self.client_id = None
+                self.client_secret = None
 
-        self.auth_url = (
-            os.getenv("TICKTICK_AUTH_URL") or "https://ticktick.com/oauth/authorize"
-        )
-        self.token_url = (
-            os.getenv("TICKTICK_TOKEN_URL") or "https://ticktick.com/oauth/token"
-        )
-        self.client_id = client_id or os.getenv("TICKTICK_CLIENT_ID")
-        self.client_secret = client_secret or os.getenv("TICKTICK_CLIENT_SECRET")
+        self.auth_url = "https://ticktick.com/oauth/authorize"
+        self.token_url = "https://ticktick.com/oauth/token"
         self.redirect_uri = redirect_uri
         self.port = port
         self.auth_code = None
@@ -174,8 +182,7 @@ class TickTickAuth:
         if not self.client_id or not self.client_secret:
             logger.warning(
                 "TickTick client ID or client secret is missing. "
-                "Please set TICKTICK_CLIENT_ID and TICKTICK_CLIENT_SECRET "
-                "environment variables or provide them as parameters."
+                "Please provide them as parameters or configure them first."
             )
 
     def get_authorization_url(self, scopes: list = None, state: str = None) -> str:
@@ -307,10 +314,10 @@ class TickTickAuth:
             # Parse the response
             self.tokens = response.json()
 
-            # Save the tokens to the .env file
-            self._save_tokens_to_env()
+            # Save the tokens to config
+            self._save_tokens()
 
-            return "Authentication successful! Access token saved to .env file."
+            return "Authentication successful! Access token saved to configuration."
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Error exchanging code for token: {e}")
@@ -322,40 +329,39 @@ class TickTickAuth:
                     return f"Error exchanging code for token: {e.response.text}"
             return f"Error exchanging code for token: {str(e)}"
 
-    def _save_tokens_to_env(self) -> None:
-        """Save the tokens to the .env file."""
+    def _save_tokens(self) -> None:
+        """Save the tokens using ConfigManager."""
         if not self.tokens:
             return
 
-        # Load existing .env file content
-        env_path = Path(".env")
-        env_content = {}
+        access_token = self.tokens.get("access_token", "")
+        refresh_token = self.tokens.get("refresh_token")
+        
+        self.config_manager.save_tokens(access_token, refresh_token)
+        logger.info("Tokens saved to configuration")
 
-        if env_path.exists():
-            with open(env_path) as f:
+    def _save_credentials(self, client_id: str, client_secret: str) -> None:
+        """Save client credentials to config file."""
+        # Load existing config content to preserve other settings
+        config_content = {}
+        if self.config_manager.env_file.exists():
+            with open(self.config_manager.env_file) as f:
                 for line in f:
                     line = line.strip()
                     if line and not line.startswith("#") and "=" in line:
                         key, value = line.split("=", 1)
-                        env_content[key] = value
+                        config_content[key] = value
 
-        # Update with new tokens
-        env_content["TICKTICK_ACCESS_TOKEN"] = self.tokens.get("access_token", "")
-        if "refresh_token" in self.tokens:
-            env_content["TICKTICK_REFRESH_TOKEN"] = self.tokens.get("refresh_token", "")
+        # Update credentials
+        config_content["TICKTICK_CLIENT_ID"] = client_id
+        config_content["TICKTICK_CLIENT_SECRET"] = client_secret
 
-        # Make sure client credentials are saved as well
-        if self.client_id and "TICKTICK_CLIENT_ID" not in env_content:
-            env_content["TICKTICK_CLIENT_ID"] = self.client_id
-        if self.client_secret and "TICKTICK_CLIENT_SECRET" not in env_content:
-            env_content["TICKTICK_CLIENT_SECRET"] = self.client_secret
-
-        # Write back to .env file
-        with open(env_path, "w") as f:
-            for key, value in env_content.items():
+        # Write back to config file
+        with open(self.config_manager.env_file, "w") as f:
+            for key, value in config_content.items():
                 f.write(f"{key}={value}\n")
 
-        logger.info("Tokens saved to .env file")
+        logger.info("Credentials saved to configuration")
 
 
 def setup_auth_cli():

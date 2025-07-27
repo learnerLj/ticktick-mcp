@@ -33,7 +33,7 @@ def test_ticktick_connection():
         print(
             "Please register your application at https://developer.ticktick.com/manage"
         )
-        print("Then run 'uv run -m ticktick_mcp.cli auth' to set up your credentials.")
+        print("Then run 'ticktick-mcp auth' to set up your credentials.")
         return False
 
     if not access_token:
@@ -51,7 +51,7 @@ def test_ticktick_connection():
             load_dotenv()
         else:
             print(
-                "Please run 'uv run -m ticktick_mcp.cli auth' to authenticate with TickTick."
+                "Please run 'ticktick-mcp auth' to authenticate with TickTick."
             )
             return False
 
@@ -65,7 +65,7 @@ def test_ticktick_connection():
         if "error" in projects:
             print(f"❌ ERROR: Failed to fetch projects: {projects['error']}")
             print(
-                "Your access token may have expired. Try running 'uv run -m ticktick_mcp.cli auth' to refresh it."
+                "Your access token may have expired. Try running 'ticktick-mcp auth' to refresh it."
             )
             return False
 
@@ -76,7 +76,7 @@ def test_ticktick_connection():
             )
 
         print("\nThe TickTick MCP server is configured correctly!")
-        print("You can now run the server using 'uv run -m ticktick_mcp.cli run'")
+        print("You can now run the server using 'ticktick-mcp run'")
         print("Or configure Claude for Desktop to use it.")
         return True
 
