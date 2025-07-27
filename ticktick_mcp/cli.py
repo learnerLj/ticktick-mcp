@@ -32,11 +32,7 @@ def cli(ctx: click.Context) -> None:
 
 
 @cli.command()
-@click.option(
-    "--debug", 
-    is_flag=True, 
-    help="Enable debug logging"
-)
+@click.option("--debug", is_flag=True, help="Enable debug logging")
 @click.option(
     "--transport",
     default="stdio",
@@ -47,19 +43,19 @@ def run(debug: bool, transport: str) -> None:
     """Run the TickTick MCP server."""
     # Note: transport parameter is reserved for future use
     _ = transport  # Currently only stdio is supported
-    
+
     # Check if auth is set up
     if not check_auth_setup():
         console = Console()
-        
+
         auth_panel = Panel(
             "[yellow]Authentication setup required![/yellow]\n\n"
             "You need to set up authentication before running the server.",
             title="[bold red]🔒 TickTick / Dida365 MCP Server - Authentication[/bold red]",
-            border_style="red"
+            border_style="red",
         )
         console.print(auth_panel)
-        
+
         if click.confirm("Would you like to set up authentication now?"):
             # Run the auth flow
             auth_result = auth_main()
@@ -68,8 +64,12 @@ def run(debug: bool, transport: str) -> None:
                 sys.exit(auth_result)
         else:
             console = Console()
-            console.print("\n[yellow]Authentication is required to use the MCP server.[/yellow]")
-            console.print("Run [bold]'ticktick-mcp auth'[/bold] to set up authentication later.")
+            console.print(
+                "\n[yellow]Authentication is required to use the MCP server.[/yellow]"
+            )
+            console.print(
+                "Run [bold]'ticktick-mcp auth'[/bold] to set up authentication later."
+            )
             sys.exit(1)
 
     # Configure logging based on debug flag
@@ -82,7 +82,10 @@ def run(debug: bool, transport: str) -> None:
         server = create_server()
         if not server.initialize():
             console = Console()
-            console.print("[bold red]❌ Failed to initialize TickTick MCP server[/bold red]", file=sys.stderr)
+            console.print(
+                "[bold red]❌ Failed to initialize TickTick MCP server[/bold red]",
+                file=sys.stderr,
+            )
             sys.exit(1)
         server.run()
     except KeyboardInterrupt:
@@ -91,7 +94,9 @@ def run(debug: bool, transport: str) -> None:
         sys.exit(0)
     except Exception as e:
         console = Console()
-        console.print(f"[bold red]❌ Error starting server:[/bold red] {e}", file=sys.stderr)
+        console.print(
+            f"[bold red]❌ Error starting server:[/bold red] {e}", file=sys.stderr
+        )
         sys.exit(1)
 
 
@@ -106,13 +111,13 @@ def status() -> None:
     """Check authentication status."""
     console = Console()
     config_manager = ConfigManager()
-    
+
     if config_manager.is_authenticated():
         status_panel = Panel(
             "[green]✅ Authentication configured[/green]\n\n"
             "You can run the server with: [bold]ticktick-mcp run[/bold]",
             title="[bold green]🔓 Authentication Status[/bold green]",
-            border_style="green"
+            border_style="green",
         )
         console.print(status_panel)
     else:
@@ -120,7 +125,7 @@ def status() -> None:
             "[red]❌ Authentication not configured[/red]\n\n"
             "Run authentication with: [bold]ticktick-mcp auth[/bold]",
             title="[bold red]🔒 Authentication Status[/bold red]",
-            border_style="red"
+            border_style="red",
         )
         console.print(status_panel)
 

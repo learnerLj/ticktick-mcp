@@ -2,9 +2,11 @@
 Simplified pytest configuration and shared fixtures.
 """
 
-import pytest
 from unittest.mock import Mock
-from ticktick_mcp.models import Task, Project, Priority, TaskStatus, ViewMode
+
+import pytest
+
+from ticktick_mcp.models import Priority, Project, Task, TaskStatus, ViewMode
 
 
 @pytest.fixture
@@ -17,7 +19,7 @@ def sample_task():
         project_id="test_project_123",
         priority=Priority.MEDIUM,
         status=TaskStatus.ACTIVE,
-        tags=["test", "sample"]
+        tags=["test", "sample"],
     )
 
 
@@ -29,7 +31,7 @@ def sample_project():
         name="Test Project",
         color="#FF5722",
         view_mode=ViewMode.LIST,
-        closed=False
+        closed=False,
     )
 
 
@@ -44,7 +46,7 @@ def sample_tasks():
             project_id="project_1",
             priority=Priority.HIGH,
             status=TaskStatus.ACTIVE,
-            tags=["work", "urgent"]
+            tags=["work", "urgent"],
         ),
         Task(
             id="task_2",
@@ -53,8 +55,8 @@ def sample_tasks():
             project_id="project_2",
             priority=Priority.LOW,
             status=TaskStatus.ACTIVE,
-            tags=["personal"]
-        )
+            tags=["personal"],
+        ),
     ]
 
 
@@ -66,14 +68,14 @@ def sample_projects():
             id="work_proj",
             name="Work Project",
             color="#FF5722",
-            view_mode=ViewMode.LIST
+            view_mode=ViewMode.LIST,
         ),
         Project(
             id="personal_proj",
             name="Personal Project",
             color="#2196F3",
-            view_mode=ViewMode.KANBAN
-        )
+            view_mode=ViewMode.KANBAN,
+        ),
     ]
 
 
@@ -102,6 +104,7 @@ def mock_api_client():
 def task_service(mock_api_client):
     """Create a TaskService with mock API client."""
     from ticktick_mcp.client import TaskService
+
     return TaskService(mock_api_client)
 
 
@@ -109,6 +112,7 @@ def task_service(mock_api_client):
 def project_service(mock_api_client):
     """Create a ProjectService with mock API client."""
     from ticktick_mcp.client import ProjectService
+
     return ProjectService(mock_api_client)
 
 
@@ -125,4 +129,5 @@ def mock_config_manager(mock_config):
 def mock_server(mock_config_manager):
     """Create a mock server for testing."""
     from ticktick_mcp.server_oop import TickTickMCPServer
+
     return TickTickMCPServer(mock_config_manager)

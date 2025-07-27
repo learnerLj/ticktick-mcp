@@ -11,14 +11,12 @@ import http.server
 import logging
 import os
 import socketserver
+import sys
 import time
 import urllib.parse
 import webbrowser
-from pathlib import Path
-from typing import Optional
 
 import requests
-from dotenv import load_dotenv
 
 from ..config import ConfigManager
 
@@ -138,11 +136,11 @@ class TickTickAuth:
 
     def __init__(
         self,
-        client_id: Optional[str] = None,
-        client_secret: Optional[str] = None,
+        client_id: str | None = None,
+        client_secret: str | None = None,
         redirect_uri: str = "http://localhost:8000/callback",
         port: int = 8000,
-        config_manager: Optional[ConfigManager] = None,
+        config_manager: ConfigManager | None = None,
     ):
         """
         Initialize the TickTick authentication manager.
@@ -155,7 +153,7 @@ class TickTickAuth:
             config_manager: ConfigManager instance for loading/saving config
         """
         self.config_manager = config_manager or ConfigManager()
-        
+
         # Try to load from config if credentials not provided
         if client_id and client_secret:
             self.client_id = client_id
@@ -177,7 +175,9 @@ class TickTickAuth:
             self.auth_url = config.auth_url
             self.token_url = config.token_url
             self.use_dida365 = config.use_dida365
-            self.service_name = "Dida365 (滴答清单)" if config.use_dida365 else "TickTick"
+            self.service_name = (
+                "Dida365 (滴答清单)" if config.use_dida365 else "TickTick"
+            )
         except Exception:
             # Fallback to TickTick URLs
             self.auth_url = "https://ticktick.com/oauth/authorize"
@@ -243,9 +243,9 @@ class TickTickAuth:
         # Get the authorization URL
         auth_url = self.get_authorization_url(scopes, state)
 
-        print(f"Opening browser for {self.service_name} authorization...")
-        print("If the browser doesn't open automatically, please visit this URL:")
-        print(auth_url)
+        print(f"Opening browser for {self.service_name} authorization...", file=sys.stderr)
+        print("If the browser doesn't open automatically, please visit this URL:", file=sys.stderr)
+        print(auth_url, file=sys.stderr)
 
         # Open the browser for the user to authorize
         webbrowser.open(auth_url)
@@ -257,7 +257,7 @@ class TickTickAuth:
             OAuthCallbackHandler.auth_code = None
             httpd = socketserver.TCPServer(("", self.port), OAuthCallbackHandler)
 
-            print(f"Waiting for authentication callback on port {self.port}...")
+            print(f"Waiting for authentication callback on port {self.port}...", file=sys.stderr)
 
             # Run the server until we get the authorization code
             # Set a timeout for the server
@@ -336,7 +336,7 @@ class TickTickAuth:
                 try:
                     error_details = e.response.json()
                     return f"Error exchanging code for token: {error_details}"
-                except:
+                except (ValueError, TypeError):
                     return f"Error exchanging code for token: {e.response.text}"
             return f"Error exchanging code for token: {str(e)}"
 
@@ -347,7 +347,7 @@ class TickTickAuth:
 
         access_token = self.tokens.get("access_token", "")
         refresh_token = self.tokens.get("refresh_token")
-        
+
         self.config_manager.save_tokens(access_token, refresh_token)
         logger.info("Tokens saved to configuration")
 
@@ -403,7 +403,7 @@ def setup_auth_cli():
     )
 
     result = auth.start_auth_flow()
-    print(result)
+    print(result, file=sys.stderr)
 
 
 if __name__ == "__main__":

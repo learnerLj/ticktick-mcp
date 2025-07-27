@@ -2,10 +2,14 @@
 Simplified unit tests for data models.
 """
 
-import pytest
-from datetime import datetime
 from ticktick_mcp.models import (
-    Task, Project, TaskFilter, Priority, TaskStatus, ViewMode, SubTask
+    Priority,
+    Project,
+    SubTask,
+    Task,
+    TaskFilter,
+    TaskStatus,
+    ViewMode,
 )
 
 
@@ -44,11 +48,7 @@ class TestSubTask:
 
     def test_subtask_creation(self):
         """Test creating a subtask."""
-        subtask = SubTask(
-            id="subtask_1",
-            title="Test Subtask",
-            status=0
-        )
+        subtask = SubTask(id="subtask_1", title="Test Subtask", status=0)
         assert subtask.id == "subtask_1"
         assert subtask.title == "Test Subtask"
         assert not subtask.is_completed
@@ -57,7 +57,7 @@ class TestSubTask:
         """Test subtask completion status."""
         completed_subtask = SubTask(id="sub_1", title="Test", status=1)
         active_subtask = SubTask(id="sub_2", title="Test", status=0)
-        
+
         assert completed_subtask.is_completed is True
         assert active_subtask.is_completed is False
 
@@ -72,7 +72,7 @@ class TestTask:
             title="Test Task",
             project_id="project_1",
             priority=Priority.HIGH,
-            status=TaskStatus.ACTIVE
+            status=TaskStatus.ACTIVE,
         )
         assert task.id == "task_1"
         assert task.title == "Test Task"
@@ -101,7 +101,7 @@ class TestProject:
             name="Test Project",
             color="#FF5722",
             view_mode=ViewMode.KANBAN,
-            closed=False
+            closed=False,
         )
         assert project.id == "project_1"
         assert project.name == "Test Project"
@@ -119,7 +119,7 @@ class TestTaskFilter:
             status=TaskStatus.ACTIVE,
             priority=Priority.HIGH,
             project_id="project_1",
-            query="important"
+            query="important",
         )
         assert filter_obj.status == TaskStatus.ACTIVE
         assert filter_obj.priority == Priority.HIGH

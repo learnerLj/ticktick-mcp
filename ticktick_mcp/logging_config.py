@@ -2,7 +2,6 @@
 
 import logging
 import sys
-from typing import Optional
 
 
 class LoggerManager:
@@ -10,28 +9,28 @@ class LoggerManager:
 
     def __init__(self, name: str = "ticktick_mcp"):
         """Initialize logger manager.
-        
+
         Args:
             name: Logger name
         """
         self.name = name
-        self._logger: Optional[logging.Logger] = None
+        self._logger: logging.Logger | None = None
 
     def setup_logging(
         self,
         level: int = logging.INFO,
         format_string: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         include_console: bool = True,
-        log_file: Optional[str] = None,
+        log_file: str | None = None,
     ) -> logging.Logger:
         """Setup logging configuration.
-        
+
         Args:
             level: Logging level
             format_string: Log message format
             include_console: Whether to include console handler
             log_file: Optional log file path
-            
+
         Returns:
             Configured logger instance
         """
@@ -46,9 +45,9 @@ class LoggerManager:
             # Create formatter
             formatter = logging.Formatter(format_string)
 
-            # Add console handler
+            # Add console handler (use stderr for MCP compatibility)
             if include_console:
-                console_handler = logging.StreamHandler(sys.stdout)
+                console_handler = logging.StreamHandler(sys.stderr)
                 console_handler.setLevel(level)
                 console_handler.setFormatter(formatter)
                 self._logger.addHandler(console_handler)
@@ -65,26 +64,26 @@ class LoggerManager:
 
         return self._logger
 
-    def get_logger(self, name: Optional[str] = None) -> logging.Logger:
+    def get_logger(self, name: str | None = None) -> logging.Logger:
         """Get logger instance.
-        
+
         Args:
             name: Optional logger name, uses default if None
-            
+
         Returns:
             Logger instance
         """
         if name:
             return logging.getLogger(f"{self.name}.{name}")
-        
+
         if self._logger is None:
             return self.setup_logging()
-        
+
         return self._logger
 
     def set_level(self, level: int) -> None:
         """Set logging level.
-        
+
         Args:
             level: New logging level
         """

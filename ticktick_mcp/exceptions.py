@@ -4,7 +4,7 @@
 class TickTickMCPError(Exception):
     """Base exception for all TickTick MCP errors."""
 
-    def __init__(self, message: str, code: str = None):
+    def __init__(self, message: str, code: str | None = None):
         super().__init__(message)
         self.message = message
         self.code = code
@@ -20,7 +20,7 @@ class AuthenticationError(TickTickMCPError):
 class APIError(TickTickMCPError):
     """Raised when TickTick API returns an error."""
 
-    def __init__(self, message: str, status_code: int = None):
+    def __init__(self, message: str, status_code: int | None = None):
         super().__init__(message, "API_ERROR")
         self.status_code = status_code
 

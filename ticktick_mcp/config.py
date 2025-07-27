@@ -3,7 +3,6 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -16,21 +15,21 @@ class TickTickConfig:
 
     client_id: str
     client_secret: str
-    access_token: Optional[str] = None
-    refresh_token: Optional[str] = None
+    access_token: str | None = None
+    refresh_token: str | None = None
     base_url: str = "https://api.ticktick.com/open/v1"
     auth_url: str = "https://ticktick.com/oauth/authorize"
     token_url: str = "https://ticktick.com/oauth/token"
     redirect_uri: str = "http://localhost:8080/callback"
     use_dida365: bool = False
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate configuration after initialization."""
         if not self.client_id:
             raise ConfigurationError("TICKTICK_CLIENT_ID is required")
         if not self.client_secret:
             raise ConfigurationError("TICKTICK_CLIENT_SECRET is required")
-        
+
         # Auto-configure URLs for Dida365
         if self.use_dida365:
             self.base_url = "https://api.dida365.com/open/v1"
@@ -41,9 +40,9 @@ class TickTickConfig:
 class ConfigManager:
     """Manages configuration loading and validation."""
 
-    def __init__(self, env_file: Optional[str] = None):
+    def __init__(self, env_file: str | None = None):
         """Initialize configuration manager.
-        
+
         Args:
             env_file: Path to .env file. If None, uses default in user's home directory
         """
@@ -54,42 +53,50 @@ class ConfigManager:
             config_dir = Path.home() / ".config" / "ticktick-mcp"
             config_dir.mkdir(parents=True, exist_ok=True)
             self.env_file = config_dir / ".env"
-        self._config: Optional[TickTickConfig] = None
+        self._config: TickTickConfig | None = None
 
     def load_config(self) -> TickTickConfig:
         """Load configuration from environment variables.
-        
+
         Returns:
             TickTickConfig instance
-            
+
         Raises:
             ConfigurationError: If required configuration is missing
         """
         if self._config is None:
             # Load environment variables
             load_dotenv(self.env_file)
-            
+
             # Check if using Dida365
             use_dida365 = os.getenv("USE_DIDA365", "").lower() in ("true", "1", "yes")
-            
+
             # Create configuration from environment
             self._config = TickTickConfig(
                 client_id=os.getenv("TICKTICK_CLIENT_ID", ""),
                 client_secret=os.getenv("TICKTICK_CLIENT_SECRET", ""),
                 access_token=os.getenv("TICKTICK_ACCESS_TOKEN"),
                 refresh_token=os.getenv("TICKTICK_REFRESH_TOKEN"),
-                base_url=os.getenv("TICKTICK_BASE_URL", "https://api.ticktick.com/open/v1"),
-                auth_url=os.getenv("TICKTICK_AUTH_URL", "https://ticktick.com/oauth/authorize"),
-                token_url=os.getenv("TICKTICK_TOKEN_URL", "https://ticktick.com/oauth/token"),
-                redirect_uri=os.getenv("TICKTICK_REDIRECT_URI", "http://localhost:8080/callback"),
+                base_url=os.getenv(
+                    "TICKTICK_BASE_URL", "https://api.ticktick.com/open/v1"
+                ),
+                auth_url=os.getenv(
+                    "TICKTICK_AUTH_URL", "https://ticktick.com/oauth/authorize"
+                ),
+                token_url=os.getenv(
+                    "TICKTICK_TOKEN_URL", "https://ticktick.com/oauth/token"
+                ),
+                redirect_uri=os.getenv(
+                    "TICKTICK_REDIRECT_URI", "http://localhost:8080/callback"
+                ),
                 use_dida365=use_dida365,
             )
-        
+
         return self._config
 
-    def save_tokens(self, access_token: str, refresh_token: str = None) -> None:
+    def save_tokens(self, access_token: str, refresh_token: str | None = None) -> None:
         """Save tokens to environment file.
-        
+
         Args:
             access_token: OAuth2 access token
             refresh_token: Optional OAuth2 refresh token
@@ -122,7 +129,7 @@ class ConfigManager:
 
     def is_authenticated(self) -> bool:
         """Check if user is authenticated.
-        
+
         Returns:
             True if access token is available
         """

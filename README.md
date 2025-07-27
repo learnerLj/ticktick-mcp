@@ -172,76 +172,307 @@ The server handles token refresh automatically, so you won't need to reauthentic
 
 **That's it!** No manual environment variable setup needed. The authentication tool will automatically detect you're using Dida365 and configure everything appropriately.
 
-## Usage with Claude for Desktop
+## Configuration with Claude Desktop
 
-1. Install [Claude for Desktop](https://claude.ai/download)
-2. Edit your Claude for Desktop configuration file:
+### Step 1: Install Claude Desktop
+1. Download and install [Claude Desktop](https://claude.ai/download)
+2. Complete the initial setup and sign in to your Claude account
 
-   **macOS**:
+### Step 2: Locate Configuration File
+Find your Claude Desktop configuration file location:
+
+**macOS**:
+```bash
+~/Library/Application Support/Claude/claude_desktop_config.json
+```
+
+**Windows**:
+```bash
+%APPDATA%\Claude\claude_desktop_config.json
+```
+
+**Linux**:
+```bash
+~/.config/Claude/claude_desktop_config.json
+```
+
+### Step 3: Configure MCP Server
+
+Edit the configuration file with your preferred text editor:
+
+**macOS**:
+```bash
+nano ~/Library/Application\ Support/Claude/claude_desktop_config.json
+```
+
+**Windows**:
+```bash
+notepad %APPDATA%\Claude\claude_desktop_config.json
+```
+
+**Linux**:
+```bash
+nano ~/.config/Claude/claude_desktop_config.json
+```
+
+### Step 4: Add TickTick MCP Server Configuration
+
+Choose the appropriate configuration based on your installation method:
+
+#### Option A: Global Installation (Recommended)
+If you installed via `uv tool install ticktick-mcp` or `pip install ticktick-mcp`:
+
+```json
+{
+  "mcpServers": {
+    "ticktick": {
+      "command": "ticktick-mcp",
+      "args": ["run"],
+      "env": {}
+    }
+  }
+}
+```
+
+#### Option B: Development Setup with Editable Install
+If you used `uv tool install --editable .`:
+
+```json
+{
+  "mcpServers": {
+    "ticktick": {
+      "command": "ticktick-mcp",
+      "args": ["run"],
+      "env": {}
+    }
+  }
+}
+```
+
+#### Option C: Local Development with uv run
+If you're running directly from the cloned repository:
+
+```json
+{
+  "mcpServers": {
+    "ticktick": {
+      "command": "uv",
+      "args": ["run", "--directory", "/absolute/path/to/ticktick-mcp", "ticktick-mcp", "run"],
+      "env": {}
+    }
+  }
+}
+```
+
+**Important**: Replace `/absolute/path/to/ticktick-mcp` with the actual full path to your cloned repository.
+
+### Step 5: Advanced Configuration (Optional)
+
+You can add additional configuration options:
+
+```json
+{
+  "mcpServers": {
+    "ticktick": {
+      "command": "ticktick-mcp",
+      "args": ["run", "--debug"],
+      "env": {
+        "TICKTICK_CONFIG_DIR": "/custom/config/path"
+      }
+    }
+  }
+}
+```
+
+Available options:
+- `--debug`: Enable debug logging
+- `TICKTICK_CONFIG_DIR`: Custom configuration directory (default: `~/.config/ticktick-mcp`)
+
+### Step 6: Verify Configuration
+
+1. **Save the configuration file**
+2. **Restart Claude Desktop completely** (close and reopen the application)
+3. **Check connection status**:
+   - Look for the 🔨 (tools) icon in the Claude interface
+   - Try asking: "What TickTick tools are available?"
+   - You should see a list of available TickTick MCP tools
+
+### Troubleshooting Configuration
+
+If the MCP server doesn't appear in Claude Desktop:
+
+1. **Check the JSON syntax** - Use a JSON validator to ensure your configuration is valid
+
+2. **Fix "Command not found" error**:
+   
+   If you see `spawn ticktick-mcp ENOENT` in Claude Desktop logs, the command is not in Claude's PATH. Use the full path instead:
+   
    ```bash
-   nano ~/Library/Application\ Support/Claude/claude_desktop_config.json
+   # Find the full path
+   which ticktick-mcp
    ```
-
-   **Windows**:
-   ```bash
-   notepad %APPDATA%\Claude\claude_desktop_config.json
-   ```
-
-3. Add the TickTick MCP server configuration:
-
-   **If installed globally:**
+   
+   Then update your configuration to use the full path:
    ```json
    {
-      "mcpServers": {
-         "ticktick": {
-            "command": "ticktick-mcp",
-            "args": ["run"]
-         }
-      }
+     "mcpServers": {
+       "ticktick": {
+         "command": "/Users/your-username/.local/bin/ticktick-mcp",
+         "args": ["run"],
+         "env": {}
+       }
+     }
    }
    ```
 
-   **If using development setup:**
-   ```json
-   {
-      "mcpServers": {
-         "ticktick": {
-            "command": "uv",
-            "args": ["run", "--directory", "/absolute/path/to/ticktick-mcp", "ticktick-mcp", "run"]
-         }
-      }
-   }
+3. **Verify the command path**:
+   ```bash
+   # For global installation
+   which ticktick-mcp
+   
+   # For development setup
+   which uv
    ```
 
-4. Restart Claude for Desktop
+4. **Check authentication**:
+   ```bash
+   ticktick-mcp status
+   ```
 
-Once connected, you'll see the TickTick MCP server tools available in Claude, indicated by the 🔨 (tools) icon.
+5. **Test the server manually**:
+   ```bash
+   ticktick-mcp run
+   ```
+
+6. **Check Claude Desktop logs**:
+   
+   **macOS**: `~/Library/Logs/Claude/mcp-server-ticktick.log`
+   
+   **Windows**: `%APPDATA%\Claude\logs\mcp-server-ticktick.log`
+   
+   **Linux**: `~/.local/share/Claude/logs/mcp-server-ticktick.log`
+
+7. **Common PATH issues**:
+   
+   Claude Desktop runs with a limited PATH. If `ticktick-mcp` is installed in a non-standard location (like `~/.local/bin`), you may need to:
+   - Use the full path in the configuration (recommended)
+   - Or create a symlink in `/usr/local/bin`
+
+### Multiple MCP Servers
+
+You can configure multiple MCP servers alongside TickTick:
+
+```json
+{
+  "mcpServers": {
+    "ticktick": {
+      "command": "ticktick-mcp",
+      "args": ["run"]
+    },
+    "other-server": {
+      "command": "other-mcp-server",
+      "args": ["run"]
+    }
+  }
+}
+```
+
+Once properly configured, you'll see the TickTick MCP server tools available in Claude, indicated by the 🔨 (tools) icon. You can now interact with your TickTick account using natural language!
 
 ## Available MCP Tools
+
+The TickTick MCP server provides 14 comprehensive tools for managing your tasks and projects:
+
+### Project Management Tools
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
 | `get_projects` | List all your TickTick projects | None |
 | `get_project` | Get details about a specific project | `project_id` |
-| `get_project_tasks` | List all tasks in a project | `project_id` |
-| `get_task` | Get details about a specific task | `project_id`, `task_id` |
-| `create_task` | Create a new task | `title`, `project_id`, `content` (optional), `start_date` (optional), `due_date` (optional), `priority` (optional) |
-| `update_task` | Update an existing task | `task_id`, `project_id`, `title` (optional), `content` (optional), `start_date` (optional), `due_date` (optional), `priority` (optional) |
-| `complete_task` | Mark a task as complete | `project_id`, `task_id` |
-| `delete_task` | Delete a task | `project_id`, `task_id` |
 | `create_project` | Create a new project | `name`, `color` (optional), `view_mode` (optional) |
 | `delete_project` | Delete a project | `project_id` |
+
+### Task Management Tools
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `get_all_tasks` | Get all tasks across projects with filtering | `status` (optional), `limit` (optional), `query` (optional), `priority` (optional), `project_id` (optional) |
+| `get_task_by_id` | Get task details by ID (no project needed) | `task_id` |
+| `create_task` | Create a new task | `title`, `project_id` (optional), `content` (optional), `start_date` (optional), `due_date` (optional), `priority` (optional) |
+| `update_task` | Update an existing task | `task_id`, `title` (optional), `content` (optional), `start_date` (optional), `due_date` (optional), `priority` (optional), `project_id` (optional) |
+
+### Legacy Task Tools (for compatibility)
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `get_project_tasks` | List all tasks in a specific project | `project_id` |
+| `get_task` | Get task details (legacy method) | `project_id`, `task_id` |
+
+### Task Actions
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `batch_complete_tasks` | Complete multiple tasks at once | `task_ids` (comma-separated) |
+| `batch_delete_tasks` | Delete multiple tasks at once | `task_ids` (comma-separated) |
+
+### Parameter Details
+
+- **Priority levels**: `0` (None), `1` (Low), `3` (Medium), `5` (High)
+- **Date format**: ISO format `YYYY-MM-DDThh:mm:ss+0000`
+- **Status options**: `active`, `completed`, or leave empty for all
+- **View modes**: `list`, `kanban`, `timeline`
+- **Colors**: Hex color codes (e.g., `#FF0000` for red)
+- **Limit**: Optional number to limit results (no limit by default - returns all tasks)
 
 ## Example Prompts for Claude
 
 Here are some example prompts to use with Claude after connecting the TickTick MCP server:
 
+### Basic Operations
 - "Show me all my TickTick projects"
-- "Create a new task called 'Finish MCP server documentation' in my work project with high priority"
-- "List all tasks in my personal project"
-- "Mark the task 'Buy groceries' as complete"
+- "List all my active tasks"
+- "What tasks do I have today?"
+- "Show me all completed tasks"
+
+### Project Management
 - "Create a new project called 'Vacation Planning' with a blue color"
+- "Delete the project 'Old Project'"
+- "Show me details about my work project"
+
+### Task Creation
+- "Create a new task called 'Finish MCP server documentation' in my work project with high priority"
+- "Add a task 'Buy groceries' with due date tomorrow at 6 PM"
+- "Create a high-priority task 'Prepare presentation' with content 'Include Q3 results and future roadmap'"
+
+### Task Management
+- "Update the task 'Meeting prep' to have medium priority and due date next Friday"
+- "Mark the task 'Buy groceries' as complete"
+- "Delete the task 'Old reminder'"
+- "Complete all tasks related to 'project launch'"
+
+### Search and Filtering
+- "Show me all high-priority tasks"
+- "Find tasks containing 'meeting'"
+- "List all tasks in my personal project"
+- "What are my overdue tasks?"
+
+### Batch Operations
+- "Complete tasks with IDs: task1, task2, task3"
+- "Delete multiple completed tasks"
+
+### Analysis and Planning
 - "When is my next deadline in TickTick?"
+- "What's my workload like this week?"
+- "Show me tasks I haven't completed yet"
+- "Help me prioritize my tasks for today"
+
+### Natural Language Queries
+- "What do I need to do before the weekend?"
+- "Create a daily standup checklist in my work project"
+- "Set up my grocery shopping list as tasks"
+- "Help me organize my tasks by priority"
+
+The MCP server understands natural language, so feel free to ask in your own style!
 
 ## Development
 

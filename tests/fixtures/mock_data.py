@@ -3,8 +3,8 @@ Mock data for testing.
 """
 
 from datetime import datetime
-from ticktick_mcp.models import Task, Project, Priority, TaskStatus, ViewMode
 
+from ticktick_mcp.models import Priority, Project, Task, TaskStatus, ViewMode
 
 # Mock API response data
 MOCK_PROJECT_RESPONSE = [
@@ -13,15 +13,15 @@ MOCK_PROJECT_RESPONSE = [
         "name": "Work Project",
         "color": "#FF5722",
         "viewMode": "list",
-        "closed": False
+        "closed": False,
     },
     {
-        "id": "project_2", 
+        "id": "project_2",
         "name": "Personal Project",
         "color": "#2196F3",
         "viewMode": "kanban",
-        "closed": False
-    }
+        "closed": False,
+    },
 ]
 
 MOCK_TASK_RESPONSE = {
@@ -36,27 +36,27 @@ MOCK_TASK_RESPONSE = {
             "startDate": "2024-01-01T10:00:00+0000",
             "dueDate": "2024-01-03T18:00:00+0000",
             "tags": ["work", "urgent"],
-            "items": []
+            "items": [],
         },
         {
             "id": "task_2",
             "title": "Buy groceries",
             "content": "Get milk, bread, and eggs",
-            "projectId": "project_2", 
+            "projectId": "project_2",
             "priority": 1,
             "status": 0,
             "startDate": None,
             "dueDate": "2024-01-02T12:00:00+0000",
             "tags": ["personal"],
-            "items": []
-        }
+            "items": [],
+        },
     ],
-    "columns": []
+    "columns": [],
 }
 
 MOCK_TASK_DETAIL = {
     "id": "task_1",
-    "title": "Complete report", 
+    "title": "Complete report",
     "content": "Finish the quarterly report",
     "projectId": "project_1",
     "priority": 5,
@@ -64,8 +64,9 @@ MOCK_TASK_DETAIL = {
     "startDate": "2024-01-01T10:00:00+0000",
     "dueDate": "2024-01-03T18:00:00+0000",
     "tags": ["work", "urgent"],
-    "items": []
+    "items": [],
 }
+
 
 # Test object instances
 def create_sample_project():
@@ -75,8 +76,9 @@ def create_sample_project():
         name="Test Project",
         color="#FF5722",
         view_mode=ViewMode.LIST,
-        closed=False
+        closed=False,
     )
+
 
 def create_sample_task():
     """Create a sample task for testing."""
@@ -89,8 +91,9 @@ def create_sample_task():
         status=TaskStatus.ACTIVE,
         start_date=datetime.fromisoformat("2024-01-01T10:00:00+00:00"),
         due_date=datetime.fromisoformat("2024-01-03T18:00:00+00:00"),
-        tags=["test", "sample"]
+        tags=["test", "sample"],
     )
+
 
 def create_sample_projects():
     """Create a list of sample projects for testing."""
@@ -99,15 +102,16 @@ def create_sample_projects():
             id="work_proj",
             name="Work Project",
             color="#FF5722",
-            view_mode=ViewMode.LIST
+            view_mode=ViewMode.LIST,
         ),
         Project(
-            id="personal_proj", 
+            id="personal_proj",
             name="Personal Project",
             color="#2196F3",
-            view_mode=ViewMode.KANBAN
-        )
+            view_mode=ViewMode.KANBAN,
+        ),
     ]
+
 
 def create_sample_tasks():
     """Create a list of sample tasks for testing."""
@@ -119,15 +123,15 @@ def create_sample_tasks():
             project_id="project_1",
             priority=Priority.HIGH,
             status=TaskStatus.ACTIVE,
-            tags=["work", "urgent"]
+            tags=["work", "urgent"],
         ),
         Task(
-            id="task_2", 
+            id="task_2",
             title="Buy groceries",
             content="Get milk, bread, and eggs",
             project_id="project_2",
             priority=Priority.LOW,
             status=TaskStatus.ACTIVE,
-            tags=["personal"]
-        )
+            tags=["personal"],
+        ),
     ]
