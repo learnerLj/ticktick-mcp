@@ -432,9 +432,6 @@ class TaskService:
     def update_task(self, task: Task) -> Task:
         """Update an existing task.
 
-        Note: Due to Dida365 API limitations, this method uses a workaround.
-        It deletes the old task and creates a new one with the same ID concept.
-
         Args:
             task: Task to update
 
@@ -442,11 +439,36 @@ class TaskService:
             Updated task
         """
         try:
-            # Try the direct update approach first
+            # Use the correct API format based on jacepark12/ticktick-mcp implementation
+            # The API expects: id, projectId, and other fields
+            task_data = {
+                "id": task.id,
+                "projectId": task.project_id,  # Use projectId not project_id
+            }
+
+            # Add optional fields if they exist
+            if task.title:
+                task_data["title"] = task.title
+            if task.content:
+                task_data["content"] = task.content
+            if task.priority:
+                task_data["priority"] = task.priority.value
+            if task.start_date:
+                task_data["startDate"] = task.start_date
+            if task.due_date:
+                task_data["dueDate"] = task.due_date
+
             response = self.api_client.make_request(
-                "POST", f"/task/{task.id}", task.to_dict()
+                "POST", f"/task/{task.id}", task_data
             )
-            return Task.from_dict(response)
+
+            # If response is empty (successful update), return the updated task
+            if not response or response == {}:
+                # Return the task with updated data
+                return task
+            else:
+                return Task.from_dict(response)
+
         except Exception as e:
             self.logger.warning(
                 f"Direct task update failed: {e}. Using fallback method."
@@ -500,11 +522,11 @@ class TaskService:
         )
         return True
 
-    def batch_complete_tasks(self, task_ids: list[str]) -> bool:
+    async def batch_complete_tasks(self, task_ids: list[str]) -> bool:
         """Complete multiple tasks.
 
         Since Dida365 doesn't support batch operations,
-        this method completes tasks one by one.
+        this method completes tasks one by one with delays to avoid rate limiting.
 
         Args:
             task_ids: List of task IDs
@@ -512,9 +534,15 @@ class TaskService:
         Returns:
             True if successful
         """
+        import asyncio
+        
         success_count = 0
-        for task_id in task_ids:
+        for i, task_id in enumerate(task_ids):
             try:
+                # Add delay between API calls to avoid rate limiting (except for first task)
+                if i > 0:
+                    await asyncio.sleep(1.0)  # Increased to 1.0s for consistency
+                
                 # Get task to find its project
                 task = self.get_task_by_id(task_id)
                 # Complete the task
@@ -525,6 +553,11 @@ class TaskService:
                     self.logger.warning(f"Task {task_id} has no project_id, skipping")
                     continue
                 success_count += 1
+                
+                # Log progress for multiple tasks
+                if len(task_ids) > 1:
+                    self.logger.info(f"Completed task {i+1}/{len(task_ids)}: {task_id}")
+                    
             except Exception as e:
                 self.logger.warning(f"Failed to complete task {task_id}: {e}")
 
@@ -535,11 +568,11 @@ class TaskService:
 
         return True
 
-    def batch_delete_tasks(self, task_ids: list[str]) -> bool:
+    async def batch_delete_tasks(self, task_ids: list[str]) -> bool:
         """Delete multiple tasks.
 
         Since Dida365 doesn't support batch operations,
-        this method deletes tasks one by one.
+        this method deletes tasks one by one with delays to avoid rate limiting.
         Note: Completed tasks cannot be deleted and will be skipped.
 
         Args:
@@ -548,13 +581,19 @@ class TaskService:
         Returns:
             True if successful
         """
+        import asyncio
+        
         success_count = 0
         failed_tasks = []
         completed_tasks = []
         not_found_tasks = []
 
-        for task_id in task_ids:
+        for i, task_id in enumerate(task_ids):
             try:
+                # Add delay between API calls to avoid rate limiting (except for first task)
+                if i > 0:
+                    await asyncio.sleep(1.0)  # Increased to 1.0s for consistency
+                
                 # Get task to find its project and check status
                 task = self.get_task_by_id(task_id)
 
@@ -574,6 +613,10 @@ class TaskService:
                     self.logger.warning(f"Task {task_id} has no project_id, skipping")
                     continue
                 success_count += 1
+                
+                # Log progress for multiple tasks
+                if len(task_ids) > 1:
+                    self.logger.info(f"Deleted task {i+1}/{len(task_ids)}: {task_id}")
 
             except Exception as e:
                 if "not found" in str(e).lower():
@@ -762,6 +805,46 @@ class ProjectService:
             Created project
         """
         response = self.api_client.make_request("POST", "/project", project.to_dict())
+        return Project.from_dict(response)
+
+    def update_project(
+        self,
+        project_id: str,
+        name: str = None,
+        color: str = None,
+        view_mode: str = None,
+        kind: str = None,
+    ) -> Project:
+        """Update an existing project.
+
+        Args:
+            project_id: Project ID
+            name: Project name (optional)
+            color: Project color (optional)
+            view_mode: View mode (optional)
+            kind: Project kind (optional)
+
+        Returns:
+            Updated project
+        """
+        # Build update data
+        update_data = {}
+        if name is not None:
+            update_data["name"] = name
+        if color is not None:
+            update_data["color"] = color
+        if view_mode is not None:
+            update_data["viewMode"] = view_mode
+        if kind is not None:
+            update_data["kind"] = kind
+
+        response = self.api_client.update_project(
+            project_id=project_id,
+            name=name,
+            color=color,
+            view_mode=view_mode,
+            kind=kind,
+        )
         return Project.from_dict(response)
 
     def delete_project(self, project_id: str) -> bool:

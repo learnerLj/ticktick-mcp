@@ -11,6 +11,7 @@ from .logging_config import LoggerManager
 from .tools import (
     BatchCompleteTasksTool,
     BatchDeleteTasksTool,
+    BatchMigrateTasksTool,
     CreateProjectTool,
     CreateTaskTool,
     DeleteProjectTool,
@@ -18,6 +19,7 @@ from .tools import (
     GetProjectsTool,
     GetProjectTool,
     GetTaskByIdTool,
+    UpdateProjectTool,
     UpdateTaskTool,
 )
 
@@ -141,6 +143,7 @@ class TickTickMCPServer:
             ("get_projects", GetProjectsTool(self.project_service)),
             ("get_project", GetProjectTool(self.project_service)),
             ("create_project", CreateProjectTool(self.project_service)),
+            ("update_project", UpdateProjectTool(self.project_service)),
             ("delete_project", DeleteProjectTool(self.project_service)),
         ]
 
@@ -152,6 +155,7 @@ class TickTickMCPServer:
             ("update_task", UpdateTaskTool(self.task_service)),
             ("batch_complete_tasks", BatchCompleteTasksTool(self.task_service)),
             ("batch_delete_tasks", BatchDeleteTasksTool(self.task_service)),
+            ("batch_migrate_tasks", BatchMigrateTasksTool(self.task_service)),
         ]
 
         # Register all tools
@@ -192,6 +196,34 @@ class TickTickMCPServer:
         ):
             tool = self.tool_registry.get_tool("create_project")
             return await tool.execute(name=name, color=color, view_mode=view_mode)
+
+        @self.mcp.tool(
+            name="update_project", description="Update an existing project in TickTick"
+        )
+        async def update_project(
+            project_id: str,
+            name: str = None,
+            color: str = None,
+            view_mode: str = None,
+            kind: str = None,
+        ) -> str:
+            """Update an existing project.
+            
+            Args:
+                project_id: ID of the project to update
+                name: New project name (optional)
+                color: New color code in hex format (optional)
+                view_mode: New view mode - list, kanban, or timeline (optional)
+                kind: New project kind - TASK or NOTE (optional)
+            """
+            tool = self.tool_registry.get_tool("update_project")
+            return await tool.execute(
+                project_id=project_id,
+                name=name,
+                color=color,
+                view_mode=view_mode,
+                kind=kind,
+            )
 
         @self.mcp.tool()
         async def delete_project(project_id: str) -> str:
@@ -290,7 +322,18 @@ class TickTickMCPServer:
             tool = self.tool_registry.get_tool("batch_delete_tasks")
             return await tool.execute(task_ids=task_ids)
 
-        self.logger.info(f"Registered 10 MCP tools")
+        @self.mcp.tool()
+        async def batch_move_tasks(task_ids: str, project_id: str) -> str:
+            """Move multiple tasks to a different project.
+            
+            Args:
+                task_ids: Single task ID or comma-separated list of task IDs to move
+                project_id: ID of the destination project
+            """
+            tool = self.tool_registry.get_tool("batch_move_tasks")
+            return await tool.execute(task_ids=task_ids, project_id=project_id)
+
+        self.logger.info("Registered 11 MCP tools")
 
     def run(self, transport: str = "stdio") -> None:
         """Run the MCP server.
