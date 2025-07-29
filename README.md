@@ -6,16 +6,16 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for Ti
 
 ## Features
 
-- 📋 **Comprehensive Task Management**: View, create, update, and delete tasks across all projects
-- 🎯 **Advanced Filtering**: Search tasks by status, priority, project, and content
-- 🔄 **Intelligent Task Migration**: Move tasks between projects with full data preservation
-- ✅ **Batch Operations**: Complete or delete multiple tasks simultaneously with smart error handling
-- 📁 **Project Management**: Full CRUD operations for TickTick projects
-- 🔍 **Global Task Access**: Get tasks by ID without needing project information
-- 🚀 **Object-Oriented Architecture**: Modern, maintainable codebase with service layer design
-- 🛡️ **Robust Error Handling**: Intelligent retry logic and graceful failure recovery
-- 🔄 **Automatic Token Refresh**: Seamless OAuth2 authentication with background token management
-- 🔌 **Native MCP Integration**: Purpose-built for Claude Desktop and other MCP clients
+- **Comprehensive Task Management**: View, create, update, and delete tasks across all projects
+- **Advanced Filtering**: Search tasks by status, priority, project, and content
+- **Intelligent Task Migration**: Move tasks between projects with full data preservation
+- **Batch Operations**: Complete or delete multiple tasks simultaneously with smart error handling
+- **Project Management**: Full CRUD operations for TickTick projects
+- **Global Task Access**: Get tasks by ID without needing project information
+- **Object-Oriented Architecture**: Modern, maintainable codebase with service layer design
+- **Robust Error Handling**: Intelligent retry logic and graceful failure recovery
+- **Automatic Token Refresh**: Seamless OAuth2 authentication with background token management
+- **Native MCP Integration**: Purpose-built for Claude Desktop and other MCP clients
 
 ## Prerequisites
 
@@ -26,20 +26,24 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for Ti
 
 ## Installation
 
-### Option 1: Install from Package (Recommended)
+### Installation from Source (Recommended)
 
-1. **Install via uv (recommended)**:
+1. **Clone this repository**:
+   ```bash
+   git clone https://github.com/jacepark12/ticktick-mcp.git
+   cd ticktick-mcp
+   ```
+
+2. **Install dependencies and the package globally**:
    ```bash
    # Install uv if you don't have it already
    curl -LsSf https://astral.sh/uv/install.sh | sh
    
-   # Install as a global tool
-   uv tool install ticktick-mcp
-   ```
-
-2. **Or install via pip**:
-   ```bash
-   pip install ticktick-mcp
+   # Install dependencies
+   uv sync
+   
+   # Install as global tool from local source
+   uv tool install --editable .
    ```
 
 3. **Authenticate with TickTick**:
@@ -141,8 +145,6 @@ nano ~/.config/Claude/claude_desktop_config.json
 ```
 
 ### Step 4: Add TickTick MCP Server Configuration
-
-Choose the appropriate configuration based on your installation method:
 
 Add the following configuration to your Claude Desktop config file:
 
@@ -269,13 +271,13 @@ You can configure multiple MCP servers alongside TickTick:
 }
 ```
 
-Once properly configured, you'll see the TickTick MCP server tools available in Claude, indicated by the 🔨 (tools) icon. You can now interact with your TickTick account using natural language!
+Once properly configured, you'll see the TickTick MCP server tools available in Claude, indicated by the tools icon. You can now interact with your TickTick account using natural language!
 
 ## Available MCP Tools
 
 The TickTick MCP server provides **15 comprehensive tools** for managing your tasks and projects:
 
-### 📁 Project Management (5 tools)
+### Project Management (5 tools)
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
@@ -285,31 +287,31 @@ The TickTick MCP server provides **15 comprehensive tools** for managing your ta
 | `update_project` | Update project properties | `project_id`, `name` (optional), `color` (optional), `view_mode` (optional), `kind` (optional) |
 | `delete_project` | Delete a project | `project_id` |
 
-### 📋 Core Task Management (6 tools)
+### Core Task Management (6 tools)
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `get_all_tasks` | **Get all tasks across projects** with advanced filtering | `status`, `limit`, `query`, `priority`, `project_id` (all optional) |
-| `get_task_by_id` | **Get task by ID directly** (no project needed) | `task_id` |
-| `create_task` | **Create a new task** with full property support | `title`, `project_id`, `content`, `start_date`, `due_date`, `priority` (all optional except title) |
-| `update_task` | **Update existing task** properties | `task_id`, `title`, `content`, `start_date`, `due_date`, `priority`, `project_id` (all optional except task_id) |
-| `batch_complete_tasks` | **Complete multiple tasks** with error handling | `task_ids` (comma-separated) |
-| `batch_delete_tasks` | **Delete multiple tasks** (active tasks only) | `task_ids` (comma-separated) |
+| `get_all_tasks` | Get all tasks across projects with advanced filtering | `status`, `limit`, `query`, `priority`, `project_id` (all optional) |
+| `get_task_by_id` | Get task by ID directly (no project needed) | `task_id` |
+| `create_task` | Create a new task with full property support | `title`, `project_id`, `content`, `start_date`, `due_date`, `priority` (all optional except title) |
+| `update_task` | Update existing task properties | `task_id`, `title`, `content`, `start_date`, `due_date`, `priority`, `project_id` (all optional except task_id) |
+| `batch_complete_tasks` | Complete multiple tasks with error handling | `task_ids` (comma-separated) |
+| `batch_delete_tasks` | Delete multiple tasks (active tasks only) | `task_ids` (comma-separated) |
 
-### 🚀 Advanced Operations (4 tools)
+### Advanced Operations (4 tools)
 
 | Tool | Description | Key Features |
 |------|-------------|--------------|
-| `batch_migrate_tasks` | **Migrate tasks between projects** | • Atomic create+delete operations<br/>• Full data preservation<br/>• Intelligent batching (1-3 tasks)<br/>• Retry logic with exponential backoff<br/>• API limitation workarounds |
+| `batch_migrate_tasks` | Migrate tasks between projects | • Atomic create+delete operations<br/>• Full data preservation<br/>• Intelligent batching (1-3 tasks)<br/>• Retry logic with exponential backoff<br/>• API limitation workarounds |
 
-### 🔄 Legacy Compatibility (2 tools)
+### Legacy Compatibility (2 tools)
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
 | `get_project_tasks` | List tasks in specific project (legacy) | `project_id` |
 | `get_task` | Get task details (legacy method) | `project_id`, `task_id` |
 
-## 🎯 Tool Highlights
+## Tool Highlights
 
 ### **Task Migration System**
 The `batch_migrate_tasks` tool is particularly sophisticated:

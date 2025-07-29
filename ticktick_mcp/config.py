@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from dotenv import load_dotenv
+from platformdirs import user_config_dir
 
 from .exceptions import ConfigurationError
 
@@ -44,13 +45,16 @@ class ConfigManager:
         """Initialize configuration manager.
 
         Args:
-            env_file: Path to .env file. If None, uses default in user's home directory
+            env_file: Path to .env file. If None, uses platform-appropriate config directory:
+                      - Windows: %APPDATA%/ticktick-mcp/.env
+                      - macOS: ~/Library/Application Support/ticktick-mcp/.env  
+                      - Linux: ~/.config/ticktick-mcp/.env
         """
         if env_file:
             self.env_file = Path(env_file)
         else:
-            # Use user's home directory for config
-            config_dir = Path.home() / ".config" / "ticktick-mcp"
+            # Use platform-appropriate config directory
+            config_dir = Path(user_config_dir("ticktick-mcp", "ticktick"))
             config_dir.mkdir(parents=True, exist_ok=True)
             self.env_file = config_dir / ".env"
         self._config: TickTickConfig | None = None
