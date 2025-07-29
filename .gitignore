@@ -170,3 +170,5 @@ venv.bak/
 
 # Others
 mcp.txt
+.ruff_cache
+.claude

@@ -6,13 +6,16 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for Ti
 
 ## Features
 
-- 📋 View all your TickTick projects and tasks
-- ✏️ Create new projects and tasks through natural language
-- 🔄 Update existing task details (title, content, dates, priority)
-- ✅ Mark tasks as complete
-- 🗑️ Delete tasks and projects
-- 🔄 Full integration with TickTick's open API
-- 🔌 Seamless integration with Claude and other MCP clients
+- 📋 **Comprehensive Task Management**: View, create, update, and delete tasks across all projects
+- 🎯 **Advanced Filtering**: Search tasks by status, priority, project, and content
+- 🔄 **Intelligent Task Migration**: Move tasks between projects with full data preservation
+- ✅ **Batch Operations**: Complete or delete multiple tasks simultaneously with smart error handling
+- 📁 **Project Management**: Full CRUD operations for TickTick projects
+- 🔍 **Global Task Access**: Get tasks by ID without needing project information
+- 🚀 **Object-Oriented Architecture**: Modern, maintainable codebase with service layer design
+- 🛡️ **Robust Error Handling**: Intelligent retry logic and graceful failure recovery
+- 🔄 **Automatic Token Refresh**: Seamless OAuth2 authentication with background token management
+- 🔌 **Native MCP Integration**: Purpose-built for Claude Desktop and other MCP clients
 
 ## Prerequisites
 
@@ -381,39 +384,70 @@ Once properly configured, you'll see the TickTick MCP server tools available in 
 
 ## Available MCP Tools
 
-The TickTick MCP server provides 14 comprehensive tools for managing your tasks and projects:
+The TickTick MCP server provides **15 comprehensive tools** for managing your tasks and projects:
 
-### Project Management Tools
+### 📁 Project Management (5 tools)
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
 | `get_projects` | List all your TickTick projects | None |
 | `get_project` | Get details about a specific project | `project_id` |
 | `create_project` | Create a new project | `name`, `color` (optional), `view_mode` (optional) |
+| `update_project` | Update project properties | `project_id`, `name` (optional), `color` (optional), `view_mode` (optional), `kind` (optional) |
 | `delete_project` | Delete a project | `project_id` |
 
-### Task Management Tools
+### 📋 Core Task Management (6 tools)
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `get_all_tasks` | Get all tasks across projects with filtering | `status` (optional), `limit` (optional), `query` (optional), `priority` (optional), `project_id` (optional) |
-| `get_task_by_id` | Get task details by ID (no project needed) | `task_id` |
-| `create_task` | Create a new task | `title`, `project_id` (optional), `content` (optional), `start_date` (optional), `due_date` (optional), `priority` (optional) |
-| `update_task` | Update an existing task | `task_id`, `title` (optional), `content` (optional), `start_date` (optional), `due_date` (optional), `priority` (optional), `project_id` (optional) |
+| `get_all_tasks` | **Get all tasks across projects** with advanced filtering | `status`, `limit`, `query`, `priority`, `project_id` (all optional) |
+| `get_task_by_id` | **Get task by ID directly** (no project needed) | `task_id` |
+| `create_task` | **Create a new task** with full property support | `title`, `project_id`, `content`, `start_date`, `due_date`, `priority` (all optional except title) |
+| `update_task` | **Update existing task** properties | `task_id`, `title`, `content`, `start_date`, `due_date`, `priority`, `project_id` (all optional except task_id) |
+| `batch_complete_tasks` | **Complete multiple tasks** with error handling | `task_ids` (comma-separated) |
+| `batch_delete_tasks` | **Delete multiple tasks** (active tasks only) | `task_ids` (comma-separated) |
 
-### Legacy Task Tools (for compatibility)
+### 🚀 Advanced Operations (4 tools)
+
+| Tool | Description | Key Features |
+|------|-------------|--------------|
+| `batch_migrate_tasks` | **Migrate tasks between projects** | • Atomic create+delete operations<br/>• Full data preservation<br/>• Intelligent batching (1-3 tasks)<br/>• Retry logic with exponential backoff<br/>• API limitation workarounds |
+
+### 🔄 Legacy Compatibility (2 tools)
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `get_project_tasks` | List all tasks in a specific project | `project_id` |
+| `get_project_tasks` | List tasks in specific project (legacy) | `project_id` |
 | `get_task` | Get task details (legacy method) | `project_id`, `task_id` |
 
-### Task Actions
+## 🎯 Tool Highlights
 
-| Tool | Description | Parameters |
-|------|-------------|------------|
-| `batch_complete_tasks` | Complete multiple tasks at once | `task_ids` (comma-separated) |
-| `batch_delete_tasks` | Delete multiple tasks at once | `task_ids` (comma-separated) |
+### **Task Migration System**
+The `batch_migrate_tasks` tool is particularly sophisticated:
+
+- **Atomic Operations**: Creates new task first, deletes original only if creation succeeds
+- **Complete Data Preservation**: Maintains all properties (content, priority, dates, subtasks, tags)
+- **API Limitation Handling**: Works around Dida365's inability to directly move tasks between projects
+- **Intelligent Batching**: Adjusts batch size (1-3 tasks) based on success rates
+- **Advanced Error Recovery**: Exponential backoff, specific error type handling
+- **Detailed Reporting**: Comprehensive success/failure feedback with specific error messages
+
+### **Advanced Filtering**
+The `get_all_tasks` tool supports comprehensive filtering:
+
+- **Status**: `active`, `completed`, or all tasks
+- **Priority**: Filter by priority level (0-5)
+- **Project**: Specific project or special collections (e.g., `inbox`)
+- **Search Query**: Text search in task titles and content
+- **Limit**: Control number of results returned
+
+### **Batch Operations**
+Both `batch_complete_tasks` and `batch_delete_tasks` include:
+
+- **Rate Limiting**: 1.0s delays between API calls
+- **Error Tolerance**: Continues processing even if individual tasks fail
+- **Detailed Logging**: Progress tracking for multiple-task operations
+- **Smart Skipping**: Automatically handles completed tasks that can't be deleted
 
 ### Parameter Details
 
@@ -455,10 +489,18 @@ Here are some example prompts to use with Claude after connecting the TickTick M
 - "Find tasks containing 'meeting'"
 - "List all tasks in my personal project"
 - "What are my overdue tasks?"
+- "Show me tasks from my inbox"
+- "Get all active tasks with medium priority"
+
+### Advanced Operations
+- "Move these 3 tasks from my personal project to work project"
+- "Migrate all tasks containing 'meeting' to my calendar project"
+- "Transfer the high-priority tasks from old project to new project"
 
 ### Batch Operations
 - "Complete tasks with IDs: task1, task2, task3"
 - "Delete multiple completed tasks"
+- "Mark all grocery-related tasks as complete"
 
 ### Analysis and Planning
 - "When is my next deadline in TickTick?"
@@ -480,20 +522,22 @@ The MCP server understands natural language, so feel free to ask in your own sty
 
 ```
 ticktick-mcp/
-├── .env.template          # Template for environment variables
-├── README.md              # Project documentation
-├── requirements.txt       # Project dependencies
-├── setup.py               # Package setup file
-├── test_server.py         # Test script for server configuration
-└── ticktick_mcp/          # Main package
-    ├── __init__.py        # Package initialization
-    ├── authenticate.py    # OAuth authentication utility
-    ├── cli.py             # Command-line interface
-    └── src/               # Source code
-        ├── __init__.py    # Module initialization
-        ├── auth.py        # OAuth authentication implementation
-        ├── server.py      # MCP server implementation
-        └── ticktick_client.py  # TickTick API client
+├── README.md                    # Project documentation  
+├── CLAUDE.md                    # Claude Code guidance
+├── pyproject.toml              # Modern Python project configuration
+├── uv.lock                     # Dependency lock file
+├── test_server.py              # Server configuration test
+└── ticktick_mcp/               # Main package
+    ├── __init__.py             # Package initialization
+    ├── cli.py                  # Command-line interface
+    ├── server_oop.py           # Object-oriented MCP server
+    ├── client.py               # Modern API client with services
+    ├── auth.py                 # OAuth2 authentication
+    ├── config.py               # Configuration management
+    ├── models.py               # Data models and enums
+    ├── tools.py                # MCP tool implementations
+    ├── exceptions.py           # Custom exception classes
+    └── logging_config.py       # Logging configuration
 ```
 
 ### Authentication Flow
