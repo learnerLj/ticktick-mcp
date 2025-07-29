@@ -27,29 +27,48 @@ The project requires TickTick OAuth2 authentication before use. If credentials a
 
 ## Architecture
 
-This is a Model Context Protocol (MCP) server that provides TickTick task management integration for Claude and other MCP clients.
+This is a Model Context Protocol (MCP) server that provides TickTick/Dida365 task management integration for Claude and other MCP clients.
 
 ### Core Components
 
-**MCP Server (`ticktick_mcp/src/server.py`)**
-- FastMCP-based server with 8 tools for task/project management
-- Handles initialization and API connectivity validation
+**MCP Server (`ticktick_mcp/server_oop.py`)**
+- Object-oriented FastMCP-based server with 15 tools for comprehensive task/project management
+- Handles initialization, API connectivity validation, and tool registration
 - Formats TickTick objects for human-readable display
+- Uses dependency injection pattern for services
 
-**TickTick API Client (`ticktick_mcp/src/ticktick_client.py`)**
+**TickTick API Client (`ticktick_mcp/client.py`)**
+- Modern object-oriented design with service layer architecture
 - OAuth2 authentication with automatic token refresh
 - Full CRUD operations for projects and tasks
-- Error handling and API response validation
+- Robust error handling and API response validation
+- Support for both TickTick and Dida365 APIs
 
 **CLI Interface (`ticktick_mcp/cli.py`)**
 - `auth` command for OAuth2 setup flow
 - `run` command for starting the MCP server
+- `status` command for checking authentication state
 - Automatic authentication check before server startup
 
-**Authentication Module (`ticktick_mcp/src/auth.py`)**
+**Authentication Module (`ticktick_mcp/auth.py`)**
 - OAuth2 flow implementation with local callback server
 - Token exchange and storage in `.env` file
 - Support for both TickTick and Dida365 (Chinese version)
+
+**Configuration Management (`ticktick_mcp/config.py`)**
+- Centralized configuration handling
+- Environment variable management
+- Token persistence and loading
+
+**Models (`ticktick_mcp/models.py`)**
+- Comprehensive data models for Task, Project, and related entities
+- Type-safe enums for Priority, ViewMode, TaskStatus
+- Serialization/deserialization methods
+
+**Tools (`ticktick_mcp/tools.py`)**
+- Object-oriented tool implementations with abstract base class
+- Comprehensive error handling and validation
+- Intelligent batch processing with retry logic
 
 ### Environment Configuration
 - `.env` file stores OAuth2 tokens and API endpoints
@@ -58,29 +77,38 @@ This is a Model Context Protocol (MCP) server that provides TickTick task manage
 
 ### MCP Tools Available
 
-**Project Management (4 tools):**
+**Project Management (5 tools):**
 - `get_projects` - List all projects
 - `get_project` - Get specific project details
 - `create_project` - Create new project
+- `update_project` - Update existing project properties
 - `delete_project` - Delete project
 
 **Task Management (6 tools):**
-- `get_project_tasks` - Get tasks in specific project (legacy)
-- `get_task` - Get specific task by project_id + task_id (legacy)
-- `create_task` - Create new task
-- `update_task` - Update existing task
-- `complete_task` - Mark task as complete
-- `delete_task` - Delete task
-
-**Global Task Operations (2 tools):**
-- `get_all_tasks` - Get all tasks across projects (with optional query, priority, project filters)
+- `create_task` - Create new task with full property support
+- `update_task` - Update existing task properties
+- `get_all_tasks` - Get all tasks across projects with advanced filtering (status, priority, project, query)
 - `get_task_by_id` - Get task directly by ID (no project_id required)
+- `batch_complete_tasks` - Complete multiple tasks with intelligent error handling
+- `batch_delete_tasks` - Delete multiple tasks (active tasks only)
 
-**Batch Operations (2 tools):**
-- `batch_complete_tasks` - Complete multiple tasks at once
-- `batch_delete_tasks` - Delete multiple tasks at once
+**Advanced Operations (4 tools):**
+- `batch_migrate_tasks` - Migrate tasks between projects using atomic create+delete approach
+  - Handles API limitations with intelligent batching
+  - Preserves all task data (content, priority, dates, subtasks)
+  - Includes retry logic and error recovery
+  - Works around Dida365 API constraints
 
-**Total: 14 MCP tools** (reduced from 31)
+**Total: 15 MCP tools**
+
+### Task Migration Features
+The `batch_migrate_tasks` tool implements a sophisticated migration system:
+- **Atomic Operations**: Creates new task first, then deletes original only if creation succeeds
+- **Data Preservation**: Maintains all task properties including subtasks, dates, and priority
+- **Intelligent Batching**: Adjusts batch size based on success rates (1-3 tasks per batch)
+- **API Limitation Handling**: Works around Dida365's inability to directly move tasks between projects
+- **Retry Logic**: Exponential backoff for transient failures
+- **Detailed Reporting**: Comprehensive success/failure reporting with specific error types
 
 ### Date Format
 All date inputs use ISO format: `YYYY-MM-DDThh:mm:ss+0000`
@@ -90,3 +118,15 @@ All date inputs use ISO format: `YYYY-MM-DDThh:mm:ss+0000`
 - 1: Low
 - 3: Medium  
 - 5: High
+
+### Testing and Debugging
+- Multiple test scripts available for validating functionality
+- Debug scripts for step-by-step migration testing
+- Comprehensive logging with configurable levels
+- Error simulation and recovery testing
+
+### API Compatibility
+- Primary support for Dida365 (Chinese TickTick) API
+- Automatic handling of API response variations
+- Fallback mechanisms for API limitations
+- Rate limiting compliance with configurable delays
