@@ -58,84 +58,6 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for Ti
    ticktick-mcp status
    ```
 
-### Option 2: Development Installation
-
-For development, you have two approaches:
-
-#### Approach A: Editable Global Install (Recommended for Development)
-
-1. **Clone this repository**:
-   ```bash
-   git clone https://github.com/jacepark12/ticktick-mcp.git
-   cd ticktick-mcp
-   ```
-
-2. **Install in editable mode as a global tool**:
-   ```bash
-   # Install uv if you don't have it already
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-
-   # Install dependencies and the package in editable mode
-   uv sync
-   uv tool install --editable .
-   ```
-
-   Now you can use `ticktick-mcp` commands globally, and any code changes will be reflected immediately without reinstalling.
-
-3. **Authenticate with TickTick**:
-   ```bash
-   ticktick-mcp auth
-   ```
-
-4. **Test your configuration**:
-   ```bash
-   uv run test_server.py
-   ```
-
-#### Approach B: Local Development with uv run
-
-1. **Clone this repository**:
-   ```bash
-   git clone https://github.com/jacepark12/ticktick-mcp.git
-   cd ticktick-mcp
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   # Install uv if you don't have it already
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-
-   # Install dependencies
-   uv sync
-   ```
-
-3. **Use uv run for all commands**:
-   ```bash
-   # Authenticate with TickTick
-   uv run ticktick-mcp auth
-
-   # Check status
-   uv run ticktick-mcp status
-
-   # Run the server
-   uv run ticktick-mcp run
-
-   # Test configuration
-   uv run test_server.py
-   ```
-
-#### Which Development Approach to Choose?
-
-| Feature | Approach A (Editable Install) | Approach B (uv run) |
-|---------|-------------------------------|----------------------|
-| **Command Usage** | `ticktick-mcp auth` | `uv run ticktick-mcp auth` |
-| **Global Access** | ✅ Available anywhere | ❌ Only in project directory |
-| **Code Changes** | ✅ Instant reflection | ✅ Instant reflection |
-| **Claude Desktop Config** | Simple: `"command": "ticktick-mcp"` | Complex: needs full uv path |
-| **Isolation** | Less isolated (global tool) | ✅ Fully isolated to project |
-| **Convenience** | ✅ Very convenient | Moderate (longer commands) |
-
-**Recommendation**: Use **Approach A (Editable Install)** for active development as it provides the best developer experience while maintaining the ability to test code changes instantly.
 
 ## Authentication with TickTick
 
@@ -540,18 +462,37 @@ ticktick-mcp/
     └── logging_config.py       # Logging configuration
 ```
 
-### Authentication Flow
+### Architecture Overview
 
-The project implements a complete OAuth 2.0 flow for TickTick:
+The project features a modern, object-oriented architecture:
 
-1. **Initial Setup**: User provides their TickTick API Client ID and Secret
-2. **Browser Authorization**: User is redirected to TickTick to grant access
-3. **Token Reception**: A local server receives the OAuth callback with the authorization code
-4. **Token Exchange**: The code is exchanged for access and refresh tokens
-5. **Token Storage**: Tokens are securely stored in the local `.env` file
-6. **Token Refresh**: The client automatically refreshes the access token when it expires
+#### **Service Layer Architecture**
+- **TaskService**: Handles all task-related operations with intelligent filtering and batch processing
+- **ProjectService**: Manages project CRUD operations
+- **TickTickAPIClient**: HTTP client with automatic authentication and error handling
+- **ConfigManager**: Centralized configuration and token management
 
-This simplifies the user experience by handling the entire OAuth flow programmatically.
+#### **Authentication Flow**
+The project implements a complete OAuth 2.0 flow for both TickTick and Dida365:
+
+1. **Initial Setup**: User provides their API Client ID and Secret
+2. **Service Detection**: Automatically detects and configures for TickTick or Dida365
+3. **Browser Authorization**: User is redirected to authorize the application
+4. **Token Reception**: Local server receives OAuth callback with authorization code
+5. **Token Exchange**: Code is exchanged for access and refresh tokens
+6. **Token Storage**: Tokens are securely stored in `~/.config/ticktick-mcp/.env`
+7. **Token Refresh**: Automatic background token refresh when needed
+
+#### **Error Handling & Resilience**
+- **Exponential Backoff**: Intelligent retry logic for transient failures
+- **Rate Limiting**: Built-in delays to respect API limits
+- **Graceful Degradation**: Continues operation even when some operations fail
+- **Detailed Logging**: Comprehensive logging for debugging and monitoring
+
+#### **API Compatibility**
+- **Dida365 Optimization**: Primary support for Chinese TickTick API
+- **Fallback Mechanisms**: Multiple strategies for handling API limitations
+- **Response Normalization**: Handles varying API response formats
 
 ### Contributing
 
