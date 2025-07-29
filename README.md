@@ -4,18 +4,15 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for Ti
 
 **✨ Supports both TickTick (International) and Dida365 滴答清单 (China) with automatic configuration!**
 
+**⚠️ Note: TickTick/Dida365 official APIs have reliability issues and may return HTTP 500 errors frequently. This MCP server includes robust error handling and retry logic to work around these limitations.**
+
 ## Features
 
-- **Comprehensive Task Management**: View, create, update, and delete tasks across all projects
-- **Advanced Filtering**: Search tasks by status, priority, project, and content
-- **Intelligent Task Migration**: Move tasks between projects with full data preservation
-- **Batch Operations**: Complete or delete multiple tasks simultaneously with smart error handling
-- **Project Management**: Full CRUD operations for TickTick projects
-- **Global Task Access**: Get tasks by ID without needing project information
-- **Object-Oriented Architecture**: Modern, maintainable codebase with service layer design
-- **Robust Error Handling**: Intelligent retry logic and graceful failure recovery
-- **Automatic Token Refresh**: Seamless OAuth2 authentication with background token management
-- **Native MCP Integration**: Purpose-built for Claude Desktop and other MCP clients
+- **Task Management**: Create, update, complete, and delete tasks across all projects
+- **Advanced Search**: Filter tasks by status, priority, project, and content
+- **Task Migration**: Move tasks between projects with full data preservation
+- **Batch Operations**: Complete or delete multiple tasks at once
+- **Project Management**: Create, update, and manage TickTick projects
 
 ## Prerequisites
 
@@ -24,9 +21,7 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for Ti
 - TickTick account with API access
 - TickTick API credentials (Client ID, Client Secret, Access Token)
 
-## Installation
-
-### Installation from Source (Recommended)
+## Installation & Setup
 
 1. **Clone this repository**:
    ```bash
@@ -34,125 +29,37 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for Ti
    cd ticktick-mcp
    ```
 
-2. **Install dependencies and the package globally**:
+2. **Install as global tool**:
    ```bash
    # Install uv if you don't have it already
    curl -LsSf https://astral.sh/uv/install.sh | sh
-   
-   # Install dependencies
-   uv sync
    
    # Install as global tool from local source
    uv tool install --editable .
    ```
 
-3. **Authenticate with TickTick**:
+3. **Register your application** at [TickTick Developer Center](https://developer.ticktick.com/) or [Dida365 Developer Center](https://developer.dida365.com/)
+   - Set the redirect URI to `http://localhost:8000/callback`
+   - Note your Client ID and Client Secret
+
+4. **Authenticate**:
    ```bash
-   # Run the authentication flow
    ticktick-mcp auth
    ```
+   Follow the prompts and authorize in your browser.
 
-   This will:
-   - Ask for your TickTick Client ID and Client Secret
-   - Open a browser window for you to log in to TickTick
-   - Automatically save your access tokens to `~/.config/ticktick-mcp/.env`
-
-4. **Check status**:
+5. **Verify setup**:
    ```bash
    ticktick-mcp status
    ```
 
-
-## Authentication with TickTick
-
-This server uses OAuth2 to authenticate with TickTick. The setup process is straightforward:
-
-1. Register your application at the [TickTick Developer Center](https://developer.ticktick.com/manage)
-   - Set the redirect URI to `http://localhost:8000/callback`
-   - Note your Client ID and Client Secret
-
-2. Run the authentication command:
-   ```bash
-   ticktick-mcp auth
-   ```
-
-3. Follow the prompts to enter your Client ID and Client Secret
-
-4. A browser window will open for you to authorize the application with your TickTick account
-
-5. After authorizing, you'll be redirected back to the application, and your access tokens will be automatically saved to `~/.config/ticktick-mcp/.env`
-
-The server handles token refresh automatically, so you won't need to reauthenticate unless you revoke access or delete your configuration.
-
-## Authentication with Dida365 (滴答清单)
-
-[滴答清单 - Dida365](https://dida365.com/home) is the China version of TickTick. The setup is just as simple:
-
-1. **Register your application** at the [Dida365 Developer Center](https://developer.dida365.com/manage)
-   - Set the redirect URI to `http://localhost:8000/callback`
-   - Note your Client ID and Client Secret
-
-2. **Run the authentication command**:
-   ```bash
-   ticktick-mcp auth
-   ```
-   
-   When prompted, select option `2` for Dida365. The system will automatically configure all the necessary API endpoints for you.
-
-**That's it!** No manual environment variable setup needed. The authentication tool will automatically detect you're using Dida365 and configure everything appropriately.
-
 ## Configuration with Claude Desktop
-
-### Step 1: Install Claude Desktop
-1. Download and install [Claude Desktop](https://claude.ai/download)
-2. Complete the initial setup and sign in to your Claude account
-
-### Step 2: Locate Configuration File
-Find your Claude Desktop configuration file location:
-
-**macOS**:
-```bash
-~/Library/Application Support/Claude/claude_desktop_config.json
-```
-
-**Windows**:
-```bash
-%APPDATA%\Claude\claude_desktop_config.json
-```
-
-**Linux**:
-```bash
-~/.config/Claude/claude_desktop_config.json
-```
-
-### Step 3: Configure MCP Server
-
-Edit the configuration file with your preferred text editor:
-
-**macOS**:
-```bash
-nano ~/Library/Application\ Support/Claude/claude_desktop_config.json
-```
-
-**Windows**:
-```bash
-notepad %APPDATA%\Claude\claude_desktop_config.json
-```
-
-**Linux**:
-```bash
-nano ~/.config/Claude/claude_desktop_config.json
-```
-
-### Step 4: Add TickTick MCP Server Configuration
-
-Add the following configuration to your Claude Desktop config file:
 
 ```json
 {
   "mcpServers": {
     "ticktick": {
-      "command": "ticktick-mcp",
+      "command": "/absolute/path/to/ticktick-mcp",
       "args": ["run"],
       "env": {}
     }
@@ -160,118 +67,7 @@ Add the following configuration to your Claude Desktop config file:
 }
 ```
 
-### Step 5: Advanced Configuration (Optional)
-
-You can add additional configuration options:
-
-```json
-{
-  "mcpServers": {
-    "ticktick": {
-      "command": "ticktick-mcp",
-      "args": ["run", "--debug"],
-      "env": {
-        "TICKTICK_CONFIG_DIR": "/custom/config/path"
-      }
-    }
-  }
-}
-```
-
-Available options:
-- `--debug`: Enable debug logging
-- `TICKTICK_CONFIG_DIR`: Custom configuration directory (default: `~/.config/ticktick-mcp`)
-
-### Step 6: Verify Configuration
-
-1. **Save the configuration file**
-2. **Restart Claude Desktop completely** (close and reopen the application)
-3. **Check connection status**:
-   - Look for the 🔨 (tools) icon in the Claude interface
-   - Try asking: "What TickTick tools are available?"
-   - You should see a list of available TickTick MCP tools
-
-### Troubleshooting Configuration
-
-If the MCP server doesn't appear in Claude Desktop:
-
-1. **Check the JSON syntax** - Use a JSON validator to ensure your configuration is valid
-
-2. **Fix "Command not found" error**:
-   
-   If you see `spawn ticktick-mcp ENOENT` in Claude Desktop logs, the command is not in Claude's PATH. Use the full path instead:
-   
-   ```bash
-   # Find the full path
-   which ticktick-mcp
-   ```
-   
-   Then update your configuration to use the full path:
-   ```json
-   {
-     "mcpServers": {
-       "ticktick": {
-         "command": "/Users/your-username/.local/bin/ticktick-mcp",
-         "args": ["run"],
-         "env": {}
-       }
-     }
-   }
-   ```
-
-3. **Verify the command path**:
-   ```bash
-   # For global installation
-   which ticktick-mcp
-   
-   # For development setup
-   which uv
-   ```
-
-4. **Check authentication**:
-   ```bash
-   ticktick-mcp status
-   ```
-
-5. **Test the server manually**:
-   ```bash
-   ticktick-mcp run
-   ```
-
-6. **Check Claude Desktop logs**:
-   
-   **macOS**: `~/Library/Logs/Claude/mcp-server-ticktick.log`
-   
-   **Windows**: `%APPDATA%\Claude\logs\mcp-server-ticktick.log`
-   
-   **Linux**: `~/.local/share/Claude/logs/mcp-server-ticktick.log`
-
-7. **Common PATH issues**:
-   
-   Claude Desktop runs with a limited PATH. If `ticktick-mcp` is installed in a non-standard location (like `~/.local/bin`), you may need to:
-   - Use the full path in the configuration (recommended)
-   - Or create a symlink in `/usr/local/bin`
-
-### Multiple MCP Servers
-
-You can configure multiple MCP servers alongside TickTick:
-
-```json
-{
-  "mcpServers": {
-    "ticktick": {
-      "command": "ticktick-mcp",
-      "args": ["run"]
-    },
-    "other-server": {
-      "command": "other-mcp-server",
-      "args": ["run"]
-    }
-  }
-}
-```
-
-Once properly configured, you'll see the TickTick MCP server tools available in Claude, indicated by the tools icon. You can now interact with your TickTick account using natural language!
+Use `which ticktick-mcp` to find the absolute path.
 
 ## Available MCP Tools
 
@@ -311,168 +107,4 @@ The TickTick MCP server provides **15 comprehensive tools** for managing your ta
 | `get_project_tasks` | List tasks in specific project (legacy) | `project_id` |
 | `get_task` | Get task details (legacy method) | `project_id`, `task_id` |
 
-## Tool Highlights
 
-### **Task Migration System**
-The `batch_migrate_tasks` tool is particularly sophisticated:
-
-- **Atomic Operations**: Creates new task first, deletes original only if creation succeeds
-- **Complete Data Preservation**: Maintains all properties (content, priority, dates, subtasks, tags)
-- **API Limitation Handling**: Works around Dida365's inability to directly move tasks between projects
-- **Intelligent Batching**: Adjusts batch size (1-3 tasks) based on success rates
-- **Advanced Error Recovery**: Exponential backoff, specific error type handling
-- **Detailed Reporting**: Comprehensive success/failure feedback with specific error messages
-
-### **Advanced Filtering**
-The `get_all_tasks` tool supports comprehensive filtering:
-
-- **Status**: `active`, `completed`, or all tasks
-- **Priority**: Filter by priority level (0-5)
-- **Project**: Specific project or special collections (e.g., `inbox`)
-- **Search Query**: Text search in task titles and content
-- **Limit**: Control number of results returned
-
-### **Batch Operations**
-Both `batch_complete_tasks` and `batch_delete_tasks` include:
-
-- **Rate Limiting**: 1.0s delays between API calls
-- **Error Tolerance**: Continues processing even if individual tasks fail
-- **Detailed Logging**: Progress tracking for multiple-task operations
-- **Smart Skipping**: Automatically handles completed tasks that can't be deleted
-
-### Parameter Details
-
-- **Priority levels**: `0` (None), `1` (Low), `3` (Medium), `5` (High)
-- **Date format**: ISO format `YYYY-MM-DDThh:mm:ss+0000`
-- **Status options**: `active`, `completed`, or leave empty for all
-- **View modes**: `list`, `kanban`, `timeline`
-- **Colors**: Hex color codes (e.g., `#FF0000` for red)
-- **Limit**: Optional number to limit results (no limit by default - returns all tasks)
-
-## Example Prompts for Claude
-
-Here are some example prompts to use with Claude after connecting the TickTick MCP server:
-
-### Basic Operations
-- "Show me all my TickTick projects"
-- "List all my active tasks"
-- "What tasks do I have today?"
-- "Show me all completed tasks"
-
-### Project Management
-- "Create a new project called 'Vacation Planning' with a blue color"
-- "Delete the project 'Old Project'"
-- "Show me details about my work project"
-
-### Task Creation
-- "Create a new task called 'Finish MCP server documentation' in my work project with high priority"
-- "Add a task 'Buy groceries' with due date tomorrow at 6 PM"
-- "Create a high-priority task 'Prepare presentation' with content 'Include Q3 results and future roadmap'"
-
-### Task Management
-- "Update the task 'Meeting prep' to have medium priority and due date next Friday"
-- "Mark the task 'Buy groceries' as complete"
-- "Delete the task 'Old reminder'"
-- "Complete all tasks related to 'project launch'"
-
-### Search and Filtering
-- "Show me all high-priority tasks"
-- "Find tasks containing 'meeting'"
-- "List all tasks in my personal project"
-- "What are my overdue tasks?"
-- "Show me tasks from my inbox"
-- "Get all active tasks with medium priority"
-
-### Advanced Operations
-- "Move these 3 tasks from my personal project to work project"
-- "Migrate all tasks containing 'meeting' to my calendar project"
-- "Transfer the high-priority tasks from old project to new project"
-
-### Batch Operations
-- "Complete tasks with IDs: task1, task2, task3"
-- "Delete multiple completed tasks"
-- "Mark all grocery-related tasks as complete"
-
-### Analysis and Planning
-- "When is my next deadline in TickTick?"
-- "What's my workload like this week?"
-- "Show me tasks I haven't completed yet"
-- "Help me prioritize my tasks for today"
-
-### Natural Language Queries
-- "What do I need to do before the weekend?"
-- "Create a daily standup checklist in my work project"
-- "Set up my grocery shopping list as tasks"
-- "Help me organize my tasks by priority"
-
-The MCP server understands natural language, so feel free to ask in your own style!
-
-## Development
-
-### Project Structure
-
-```
-ticktick-mcp/
-├── README.md                    # Project documentation  
-├── CLAUDE.md                    # Claude Code guidance
-├── pyproject.toml              # Modern Python project configuration
-├── uv.lock                     # Dependency lock file
-├── test_server.py              # Server configuration test
-└── ticktick_mcp/               # Main package
-    ├── __init__.py             # Package initialization
-    ├── cli.py                  # Command-line interface
-    ├── server_oop.py           # Object-oriented MCP server
-    ├── client.py               # Modern API client with services
-    ├── auth.py                 # OAuth2 authentication
-    ├── config.py               # Configuration management
-    ├── models.py               # Data models and enums
-    ├── tools.py                # MCP tool implementations
-    ├── exceptions.py           # Custom exception classes
-    └── logging_config.py       # Logging configuration
-```
-
-### Architecture Overview
-
-The project features a modern, object-oriented architecture:
-
-#### **Service Layer Architecture**
-- **TaskService**: Handles all task-related operations with intelligent filtering and batch processing
-- **ProjectService**: Manages project CRUD operations
-- **TickTickAPIClient**: HTTP client with automatic authentication and error handling
-- **ConfigManager**: Centralized configuration and token management
-
-#### **Authentication Flow**
-The project implements a complete OAuth 2.0 flow for both TickTick and Dida365:
-
-1. **Initial Setup**: User provides their API Client ID and Secret
-2. **Service Detection**: Automatically detects and configures for TickTick or Dida365
-3. **Browser Authorization**: User is redirected to authorize the application
-4. **Token Reception**: Local server receives OAuth callback with authorization code
-5. **Token Exchange**: Code is exchanged for access and refresh tokens
-6. **Token Storage**: Tokens are securely stored in `~/.config/ticktick-mcp/.env`
-7. **Token Refresh**: Automatic background token refresh when needed
-
-#### **Error Handling & Resilience**
-- **Exponential Backoff**: Intelligent retry logic for transient failures
-- **Rate Limiting**: Built-in delays to respect API limits
-- **Graceful Degradation**: Continues operation even when some operations fail
-- **Detailed Logging**: Comprehensive logging for debugging and monitoring
-
-#### **API Compatibility**
-- **Dida365 Optimization**: Primary support for Chinese TickTick API
-- **Fallback Mechanisms**: Multiple strategies for handling API limitations
-- **Response Normalization**: Handles varying API response formats
-
-### Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
