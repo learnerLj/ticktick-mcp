@@ -144,8 +144,7 @@ nano ~/.config/Claude/claude_desktop_config.json
 
 Choose the appropriate configuration based on your installation method:
 
-#### Option A: Global Installation (Recommended)
-If you installed via `uv tool install ticktick-mcp` or `pip install ticktick-mcp`:
+Add the following configuration to your Claude Desktop config file:
 
 ```json
 {
@@ -158,38 +157,6 @@ If you installed via `uv tool install ticktick-mcp` or `pip install ticktick-mcp
   }
 }
 ```
-
-#### Option B: Development Setup with Editable Install
-If you used `uv tool install --editable .`:
-
-```json
-{
-  "mcpServers": {
-    "ticktick": {
-      "command": "ticktick-mcp",
-      "args": ["run"],
-      "env": {}
-    }
-  }
-}
-```
-
-#### Option C: Local Development with uv run
-If you're running directly from the cloned repository:
-
-```json
-{
-  "mcpServers": {
-    "ticktick": {
-      "command": "uv",
-      "args": ["run", "--directory", "/absolute/path/to/ticktick-mcp", "ticktick-mcp", "run"],
-      "env": {}
-    }
-  }
-}
-```
-
-**Important**: Replace `/absolute/path/to/ticktick-mcp` with the actual full path to your cloned repository.
 
 ### Step 5: Advanced Configuration (Optional)
 
